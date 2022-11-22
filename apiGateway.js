@@ -4,7 +4,7 @@ const apiGateway = new AWS.ApiGatewayManagementApi({
     endpoint: 'vx92a3mpjf.execute-api.ap-northeast-1.amazonaws.com/production'
 });
 
-exports.notify = async (_socketId, _data) => {
+async function notify(_socketId, _data) {
 
     let retry = 0;
 
@@ -27,13 +27,28 @@ exports.notify = async (_socketId, _data) => {
             break;
 
         } catch (e) {
+
             console.error('notify', _socketId, _data, JSON.stringify(e));
-            if (429 === e.statusCode) {
+
+            if (429 === e.statusCode ||
+                400 === e.statusCode && 'ThrottlingException' === e.code ||
+                503 === e.statusCode && 'ServiceUnavailable' === e.code) {
+
+                // 待機する( リトライ回数 * 10msec )
                 await sleep(retry * 10);
+
             } else {
                 break;
             }
         }
+
+        // リトライ回数をインクリメントする
         retry++;
     }
+
 }
+
+/**
+ * exports
+ */
+exports.notify = notify;

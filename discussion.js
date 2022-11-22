@@ -11,7 +11,6 @@ async function getDiscussion(_country, _postId) {
 
     let discussion = null;
 
-    // discussionTableのデータを取得する
     const { data } = await Query({
         TableName: "discussionTable",
         KeyConditionExpression: "#country = :country AND #postId = :postId",
@@ -46,7 +45,6 @@ async function getWatcherIndex(_country, _postId, _socketId, _userId) {
     return index;
 }
 
-
 async function getDiscussionMeeting(_country, _postId) {
 
     let meeting = null;
@@ -73,7 +71,7 @@ async function getDiscussionMeeting(_country, _postId) {
     return meeting;
 }
 
-exports.getDiscussionAttendees = async (_country, _postId) => {
+async function getDiscussionAttendees(_country, _postId) {
 
     let attendees = {
         positive: 0,
@@ -108,8 +106,7 @@ exports.getDiscussionAttendees = async (_country, _postId) => {
 
     return attendees;
 }
-
-exports.getDiscussions = async (_country) => {
+async function getDiscussions(_country) {
 
     let discussions = [];
 
@@ -131,8 +128,6 @@ exports.getDiscussions = async (_country) => {
         //          Limit:30
     });
 
-    console.log('getDiscussions', res, _country);
-
     if (res.result && 0 < res.data.Count) {
         discussions = res.data.Items;
     }
@@ -140,9 +135,197 @@ exports.getDiscussions = async (_country) => {
     return discussions;
 }
 
-exports.getDiscussion = getDiscussion;
-exports.getWatcherIndex = getWatcherIndex;
-exports.setPositiveState = async (_country, _postId, _socketId, _userId, _state) => {
+async function getDiscussionLimitTime(_country, _postId) {
+
+    let limitTime = 0;
+
+    const { data } = await Query({
+        TableName: 'discussionTable',
+        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        ProjectionExpression: '#limitTime',
+        ExpressionAttributeNames: {
+            '#country': 'country',
+            '#postId': 'postId',
+            '#limitTime': 'limitTime'
+        },
+        ExpressionAttributeValues: {
+            ':country': _country,
+            ':postId': _postId
+        }
+    });
+
+    if (0 < data.Count) {
+        limitTime = data.Items[0].limitTime;
+    }
+
+    return limitTime;
+}
+
+async function getDiscussionMeetingAttendees(_meetingId, _externalUserId) {
+
+    let attendee = null;
+    let retry = 0;
+
+    while (true) {
+
+        try {
+
+            attendee = await chime.createAttendee({
+                MeetingId: _meetingId,
+                ExternalUserId: _externalUserId,
+            }).promise();
+
+            break;
+
+        } catch (e) {
+            console.error('getAttendeeInfo', JSON.stringify(e));
+            if (429 === e.statusCode) {
+                await sleep(retry * 10);
+            } else {
+                break;
+            }
+        }
+
+        retry++;
+    }
+
+    return attendee;
+}
+
+async function getDiscussionMeetingConfig(_country, _postId, _socketId) {
+
+    let result = null;
+    let meeting = null;
+    let attendee = null;
+
+    // ミーティング情報を取得する
+    meeting = await getDiscussionMeeting(_country, _postId);
+
+    // 取得できた場合
+    if (null !== meeting) {
+
+        // 参加者情報を取得する
+        attendee = await getDiscussionMeetingAttendees(meeting.MeetingId, _socketId);
+
+        // 取得できた場合
+        if (null !== attendee) {
+
+            result = {
+                Meeting: meeting,
+                Attendee: attendee
+            };
+        }
+    }
+
+    return result;
+}
+
+async function getDiscussionResult(_country, _postId) {
+
+    let result = null;
+
+    const { data } = await Query({
+        TableName: 'resultTable',
+        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        ProjectionExpression: '#positive, #negative, #win',
+        ExpressionAttributeNames: {
+            '#positive': 'positive',
+            '#negative': 'negative',
+            '#win': 'win',
+            '#country': 'country',
+            '#postId': 'postId',
+        },
+        ExpressionAttributeValues: {
+            ':country': _country,
+            ':postId': _postId
+        }
+    });
+
+    if (0 < data.Count) {
+        result = data.Items[0];
+    }
+
+    return result;
+}
+
+async function getSocket(_type, _socketId) {
+
+    let socket = null;
+
+    // discussionTableのデータを取得する
+    const { data } = await Query({
+        TableName: 'socketTable',
+        KeyConditionExpression: '#type = :type AND #socketId = :socketId',
+        ExpressionAttributeNames: {
+            '#type': 'type',
+            '#socketId': 'socketId'
+        },
+        ExpressionAttributeValues: {
+            ':type': _type,
+            ':socketId': _socketId
+        }
+    });
+
+    if (0 < data.Count) {
+        socket = data.Items[0];
+    }
+
+    return socket;
+}
+
+async function getSockets(_type, _postId) {
+
+    let sockets = [];
+
+    const { data } = await Query({
+        TableName: 'socketTable',
+        KeyConditionExpression: '#type = :type',
+        FilterExpression: "#postId = :postId",
+        ProjectionExpression: '#socketId',
+        ExpressionAttributeNames: {
+            '#type': 'type',
+            '#postId': 'postId',
+            '#socketId': 'socketId'
+        },
+        ExpressionAttributeValues: {
+            ':type': _type,
+            ':postId': _postId
+        }
+    });
+
+    for (let i = 0; i < data.Items.length; i++) {
+        sockets.push({
+            socketId: data.Items[i].socketId
+        });
+    }
+
+    return sockets;
+}
+
+async function getUser(_country, _postId) {
+
+    let user = null;
+
+    // discussionTableのデータを取得する
+    const { data } = await Query({
+        TableName: "discussionTable",
+        KeyConditionExpression: "#userId = :userId",
+        ExpressionAttributeNames: {
+            "#userId": 'userId'
+        },
+        ExpressionAttributeValues: {
+            ':userId': _userId
+        }
+    });
+
+    if (0 < data.Count) {
+        user = data.Items[0];
+    }
+
+    return user;
+}
+
+async function setPositiveState(_country, _postId, _socketId, _userId, _state) {
 
     return await Update({
         TableName: 'discussionTable',
@@ -166,7 +349,7 @@ exports.setPositiveState = async (_country, _postId, _socketId, _userId, _state)
     });
 }
 
-exports.reSetPositiveState = async (_country, _postId, _socketId, _userId) => {
+async function reSetPositiveState(_country, _postId, _socketId, _userId) {
 
     return await Update({
         TableName: 'discussionTable',
@@ -190,7 +373,7 @@ exports.reSetPositiveState = async (_country, _postId, _socketId, _userId) => {
     });
 }
 
-exports.setNegativeState = async (_country, _postId, _socketId, _userId, _state) => {
+async function setNegativeState(_country, _postId, _socketId, _userId, _state) {
 
     return await Update({
         TableName: 'discussionTable',
@@ -214,7 +397,7 @@ exports.setNegativeState = async (_country, _postId, _socketId, _userId, _state)
     });
 }
 
-exports.reSetNegativeState = async (_country, _postId, _socketId, _userId) => {
+async function reSetNegativeState(_country, _postId, _socketId, _userId) {
 
     await Update({
         TableName: 'discussionTable',
@@ -238,7 +421,7 @@ exports.reSetNegativeState = async (_country, _postId, _socketId, _userId) => {
     });
 }
 
-exports.setWatcherState = async (_country, _postId, _socketId, _userId, _state) => {
+async function setWatcherState(_country, _postId, _socketId, _userId, _state) {
 
     let index = 0;
     let res = null;
@@ -286,9 +469,9 @@ exports.setWatcherState = async (_country, _postId, _socketId, _userId, _state) 
     }
 
     return res;
-};
+}
 
-exports.reSetWatcherState = async (_country, _postId, _socketId, _userId) => {
+async function reSetWatcherState(_country, _postId, _socketId, _userId) {
 
     let index = 0;
     let res = null;
@@ -319,9 +502,7 @@ exports.reSetWatcherState = async (_country, _postId, _socketId, _userId) => {
             });
 
             if (!res.result) {
-                if (400 === res.error.statusCode && 'ConditionalCheckFailedException' === res.error.code) {
-                    continue;
-                } else {
+                if (!(400 === res.error.statusCode && 'ConditionalCheckFailedException' === res.error.code)) {
                     break;
                 }
             } else {
@@ -332,9 +513,183 @@ exports.reSetWatcherState = async (_country, _postId, _socketId, _userId) => {
             break;
         }
     }
-};
+}
 
-exports.joinDiscussionPositive = async (_country, _postId, _socketId, _userId, _joinType) => {
+async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
+
+    let index = 0;
+    let res = null;
+
+    while (true) {
+
+        index = await getWatcherIndex(_country, _postId, _socketId, _userId);
+
+        if (-1 !== index) {
+
+            res = await Update({
+                TableName: 'discussionTable',
+                Key: {
+                    postId: _postId,
+                    country: _country
+                },
+                UpdateExpression: 'set #watchers[' + index + '].#judge = :judge',
+                ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
+                ExpressionAttributeNames: {
+                    '#watchers': 'watchers',
+                    "#judge": 'judge',
+                    "#userId": 'userId',
+                    "#socketId": 'socketId'
+                },
+                ExpressionAttributeValues: {
+                    ':judge': _judge,
+                    ':socketId': _socketId,
+                    ':userId': _userId
+                }
+            });
+
+            if (!res.result) {
+                if (!(400 === res.error.statusCode && 'ConditionalCheckFailedException' === res.error.code)) {
+                    break;
+                }
+            } else {
+                break;
+            }
+
+        } else {
+            break;
+        }
+    }
+}
+
+async function setDiscussion(_country, _postId, _userId, _title, _detail) {
+
+    return await Put({
+        TableName: "discussionTable",
+        Item: {
+            country: _country,
+            postId: _postId,
+            createAt: getTimeStamp(),
+            pub: true,
+            userId: _userId,
+            title: _title,
+            detail: _detail,
+            progress: "standby",
+            limitTime: 0,
+            positive: {
+                userId: 'none',
+                socketId: "none",
+                state: "none",
+                version: 0
+            },
+            negative: {
+                userId: 'none',
+                socketId: "none",
+                state: "none",
+                version: 0
+            },
+            watchers: []
+        }
+    });
+}
+
+async function setUser(_userId, _name) {
+
+    return await Put({
+        TableName: "userTable",
+        Item: {
+            userId: _userId,
+            createAt: getTimeStamp(),
+            updateAt: getTimeStamp(),
+            status: "none",
+            name: _name,
+            version: 0
+        }
+    });
+}
+
+async function setDiscussionLimitTime(_country, _postId, _limitTime) {
+
+    return await Update({
+        TableName: 'discussionTable',
+        Key: {
+            postId: _postId,
+            country: _country
+        },
+        UpdateExpression: 'set #limitTime = :limitTime',
+        ExpressionAttributeNames: {
+            '#limitTime': 'limitTime'
+        },
+        ExpressionAttributeValues: {
+            ':limitTime': _limitTime
+        }
+    });
+}
+
+async function setDiscussionProgress(_country, _postId, _progress) {
+
+    await Update({
+        TableName: 'discussionTable',
+        Key: {
+            postId: _postId,
+            country: _country
+        },
+        UpdateExpression: 'set #progress = :progress',
+        ExpressionAttributeNames: {
+            '#progress': 'progress'
+        },
+        ExpressionAttributeValues: {
+            ':progress': _progress
+        }
+    });
+}
+
+async function setDiscussionMeeting(_country, _postId) {
+
+    const meeting = await chime.createMeeting({
+        ClientRequestToken: _postId,
+        ExternalMeetingId: _postId,
+        MediaRegion: 'us-east-1'
+    }).promise();
+
+    await Put({
+        TableName: 'meetingTable',
+        Item: {
+            country: _country,
+            postId: _postId,
+            ...meeting
+        }
+    });
+}
+
+async function setDiscussionResult(_country, _postId, _progress, _users) {
+
+    let data = {};
+    const positiveWatchers = _users.filter((v) => v.type === userJoinType.watcher && v.judge === userJoinType.positive);
+    const negativeWatchers = _users.filter((v) => v.type === userJoinType.watcher && v.judge === userJoinType.negative);
+
+    data.positive = positiveWatchers.length;
+    data.negative = negativeWatchers.length;
+
+    if (data.positive === data.negative) {
+        data.win = 'draw';
+    } else if (data.positive > data.negative) {
+        data.win = userJoinType.positive;
+    } else if (data.positive < data.negative) {
+        data.win = userJoinType.negative;
+    }
+
+    await Put({
+        TableName: 'resultTable',
+        Item: {
+            postId: _postId,
+            country: _country,
+            createAt: getTimeStamp(),
+            ...data
+        }
+    });
+}
+
+async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _joinType) {
 
     await TransWrite([
         {
@@ -377,7 +732,7 @@ exports.joinDiscussionPositive = async (_country, _postId, _socketId, _userId, _
     ]);
 }
 
-exports.joinDiscussionNegative = async (_country, _postId, _socketId, _userId, _joinType) => {
+async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _joinType) {
 
     await TransWrite([
         {
@@ -420,7 +775,7 @@ exports.joinDiscussionNegative = async (_country, _postId, _socketId, _userId, _
     ]);
 }
 
-exports.joinDiscussionWatcher = async (_country, _postId, _socketId, _userId, _joinType) => {
+async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joinType) {
 
     await TransWrite([
         {
@@ -463,180 +818,7 @@ exports.joinDiscussionWatcher = async (_country, _postId, _socketId, _userId, _j
         }]);
 }
 
-exports.setWatcherVote = async (_country, _postId, _socketId, _userId, _judge) => {
-
-    let index = 0;
-    let res = null;
-
-    while (true) {
-
-        index = await getWatcherIndex(_country, _postId, _socketId, _userId);
-
-        if (-1 !== index) {
-
-            res = await Update({
-                TableName: 'discussionTable',
-                Key: {
-                    postId: _postId,
-                    country: _country
-                },
-                UpdateExpression: 'set #watchers[' + index + '].#judge = :judge',
-                ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
-                ExpressionAttributeNames: {
-                    '#watchers': 'watchers',
-                    "#judge": 'judge',
-                    "#userId": 'userId',
-                    "#socketId": 'socketId'
-                },
-                ExpressionAttributeValues: {
-                    ':judge': _judge,
-                    ':socketId': _socketId,
-                    ':userId': _userId
-                }
-            });
-
-            if (!res.result) {
-                console.error('setWatcherVote', res.error);
-                if (400 === res.error.statusCode && 'ConditionalCheckFailedException' === res.error.code) {
-                    continue;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
-
-        } else {
-            break;
-        }
-    }
-};
-
-exports.getUser = async (_country, _postId) => {
-
-    let user = null;
-
-    // discussionTableのデータを取得する
-    const { data } = await Query({
-        TableName: "discussionTable",
-        KeyConditionExpression: "#userId = :userId",
-        ExpressionAttributeNames: {
-            "#userId": 'userId'
-        },
-        ExpressionAttributeValues: {
-            ':userId': _userId
-        }
-    });
-
-    if (0 < data.Count) {
-        user = data.Items[0];
-    }
-
-    return user;
-}
-
-exports.setDiscussion = async (_country, _postId, _userId, _title, _detail) => {
-
-    return await Put({
-        TableName: "discussionTable",
-        Item: {
-            country: _country,
-            postId: _postId,
-            createAt: getTimeStamp(),
-            pub: true,
-            userId: _userId,
-            title: _title,
-            detail: _detail,
-            progress: "standby",
-            limitTime: 0,
-            positive: {
-                userId: 'none',
-                socketId: "none",
-                state: "none",
-                version: 0
-            },
-            negative: {
-                userId: 'none',
-                socketId: "none",
-                state: "none",
-                version: 0
-            },
-            watchers: []
-        }
-    });
-}
-
-exports.setUser = async (_userId, _name) => {
-
-    return await Put({
-        TableName: "userTable",
-        Item: {
-            userId: _userId,
-            createAt: getTimeStamp(),
-            updateAt: getTimeStamp(),
-            status: "none",
-            name: _name,
-            version: 0
-        }
-    });
-}
-
-exports.getSocket = async (_type, _socketId) => {
-
-    let socket = null;
-
-    // discussionTableのデータを取得する
-    const { data } = await Query({
-        TableName: 'socketTable',
-        KeyConditionExpression: '#type = :type AND #socketId = :socketId',
-        ExpressionAttributeNames: {
-            '#type': 'type',
-            '#socketId': 'socketId'
-        },
-        ExpressionAttributeValues: {
-            ':type': _type,
-            ':socketId': _socketId
-        }
-    });
-
-    if (0 < data.Count) {
-        socket = data.Items[0];
-    }
-
-    return socket;
-}
-
-exports.getSockets = async (_type, _postId) => {
-
-    let sockets = [];
-
-    const { data } = await Query({
-        TableName: 'socketTable',
-        KeyConditionExpression: '#type = :type',
-        FilterExpression: "#postId = :postId",
-        ProjectionExpression: '#socketId',
-        ExpressionAttributeNames: {
-            '#type': 'type',
-            '#postId': 'postId',
-            '#socketId': 'socketId'
-        },
-        ExpressionAttributeValues: {
-            ':type': _type,
-            ':postId': _postId
-        }
-    });
-
-    for (let i = 0; i < data.Items.length; i++) {
-        sockets.push({
-            socketId: data.Items[i].socketId
-        });
-    }
-
-    return sockets;
-}
-
-
-exports.deleteSocket = async (_type, _socketId) => {
+async function deleteSocket(_type, _socketId) {
 
     return await Delete({
         TableName: 'socketTable',
@@ -647,89 +829,7 @@ exports.deleteSocket = async (_type, _socketId) => {
     });
 }
 
-exports.setDiscussionLimitTime = async (_country, _postId, _limitTime) => {
-
-    return await Update({
-        TableName: 'discussionTable',
-        Key: {
-            postId: _postId,
-            country: _country
-        },
-        UpdateExpression: 'set #limitTime = :limitTime',
-        ExpressionAttributeNames: {
-            '#limitTime': 'limitTime'
-        },
-        ExpressionAttributeValues: {
-            ':limitTime': _limitTime
-        }
-    });
-}
-
-exports.setDiscussionProgress = async (_country, _postId, _progress) => {
-
-    await Update({
-        TableName: 'discussionTable',
-        Key: {
-            postId: _postId,
-            country: _country
-        },
-        UpdateExpression: 'set #progress = :progress',
-        ExpressionAttributeNames: {
-            '#progress': 'progress'
-        },
-        ExpressionAttributeValues: {
-            ':progress': _progress
-        }
-    });
-}
-
-exports.setDiscussionMeeting = async (_country, _postId) => {
-
-    const meeting = await chime.createMeeting({
-        ClientRequestToken: _postId,
-        ExternalMeetingId: _postId,
-        MediaRegion: 'us-east-1'
-    }).promise();
-
-    await Put({
-        TableName: 'meetingTable',
-        Item: {
-            country: _country,
-            postId: _postId,
-            ...meeting
-        }
-    });
-}
-
-exports.setDiscussionResult = async (_country, _postId, _progress, _users) => {
-
-    let data = {};
-    const positiveWatchers = _users.filter((v) => v.type === userJoinType.watcher && v.judge === userJoinType.positive);
-    const negativeWatchers = _users.filter((v) => v.type === userJoinType.watcher && v.judge === userJoinType.negative);
-
-    data.positive = positiveWatchers.length;
-    data.negative = negativeWatchers.length;
-
-    if (data.positive === data.negative) {
-        data.win = 'draw';
-    } else if (data.positive > data.negative) {
-        data.win = userJoinType.positive;
-    } else if (data.positive < data.negative) {
-        data.win = userJoinType.negative;
-    }
-
-    await Put({
-        TableName: 'resultTable',
-        Item: {
-            postId: _postId,
-            country: _country,
-            createAt: getTimeStamp(),
-            ...data
-        }
-    });
-}
-
-exports.deleteMeeting = async (_country, _postId) => {
+async function deleteMeeting(_country, _postId) {
 
     const { data } = await Query({
         TableName: 'meetingTable',
@@ -753,115 +853,34 @@ exports.deleteMeeting = async (_country, _postId) => {
     }
 }
 
-exports.getDiscussionLimitTime = async (_country, _postId) => {
-
-    let limitTime = 0;
-
-    const { data } = await Query({
-        TableName: 'discussionTable',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
-        ProjectionExpression: '#limitTime',
-        ExpressionAttributeNames: {
-            '#country': 'country',
-            '#postId': 'postId',
-            '#limitTime': 'limitTime'
-        },
-        ExpressionAttributeValues: {
-            ':country': _country,
-            ':postId': _postId
-        }
-    });
-
-    if (0 < data.Count) {
-        limitTime = data.Items[0].limitTime;
-    }
-
-    return limitTime;
-}
-
-exports.getDiscussionResult = async (_country, _postId) => {
-
-    let result = null;
-
-    const { data } = await Query({
-        TableName: 'resultTable',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
-        ProjectionExpression: '#positive, #negative, #win',
-        ExpressionAttributeNames: {
-            '#positive': 'positive',
-            '#negative': 'negative',
-            '#win': 'win',
-            '#country': 'country',
-            '#postId': 'postId',
-        },
-        ExpressionAttributeValues: {
-            ':country': _country,
-            ':postId': _postId
-        }
-    });
-
-    if (0 < data.Count) {
-        result = data.Items[0];
-    }
-
-    return result;
-}
-
-async function getDiscussionMeetingAttendees(_meetingId, _externalUserId) {
-
-    let attendee = null;
-    let retry = 0;
-
-    while (true) {
-
-        try {
-
-            attendee = await chime.createAttendee({
-                MeetingId: _meetingId,
-                ExternalUserId: _externalUserId,
-            }).promise();
-
-            break;
-
-        } catch (e) {
-            console.error('getAttendeeInfo', JSON.stringify(e));
-            if (429 === e.statusCode) {
-                await sleep(retry * 10);
-            } else {
-                break;
-            }
-        }
-
-        retry++;
-    }
-
-    return attendee;
-}
-
-exports.getDiscussionMeetingConfig = async (_country, _postId, _socketId) => {
-
-    let result = null;
-    let meeting = null;
-    let attendee = null;
-
-    // ミーティング情報を取得する
-    meeting = await getDiscussionMeeting(_country, _postId);
-
-    // 取得できた場合
-    if (null !== meeting) {
-
-        // 参加者情報を取得する
-        attendee = await getDiscussionMeetingAttendees(meeting.MeetingId, _socketId);
-
-        // 取得できた場合
-        if (null !== attendee) {
-
-            result = {
-                Meeting: meeting,
-                Attendee: attendee
-            };
-        }
-    }
-
-    return result;
-}
+/**
+ * exports
+ */
+exports.getDiscussionAttendees = getDiscussionAttendees;
+exports.getDiscussions = getDiscussions;
+exports.getDiscussion = getDiscussion;
+exports.getWatcherIndex = getWatcherIndex;
+exports.getSocket = getSocket;
+exports.getSockets = getSockets;
+exports.getDiscussionLimitTime = getDiscussionLimitTime;
+exports.getDiscussionResult = getDiscussionResult;
+exports.getDiscussionMeetingConfig = getDiscussionMeetingConfig;
+exports.getUser = getUser;
+exports.setPositiveState = setPositiveState;
+exports.setNegativeState = setNegativeState;
+exports.setWatcherVote = setWatcherVote;
+exports.setUser = setUser;
+exports.setWatcherState = setWatcherState;
+exports.joinDiscussionPositive = joinDiscussionPositive;
+exports.joinDiscussionNegative = joinDiscussionNegative;
+exports.reSetWatcherState = reSetWatcherState;
+exports.reSetNegativeState = reSetNegativeState;
+exports.reSetPositiveState = reSetPositiveState;
+exports.joinDiscussionWatcher = joinDiscussionWatcher;
+exports.setDiscussion = setDiscussion;
+exports.setDiscussionLimitTime = setDiscussionLimitTime;
+exports.setDiscussionProgress = setDiscussionProgress;
+exports.setDiscussionMeeting = setDiscussionMeeting;
+exports.setDiscussionResult = setDiscussionResult;
+exports.deleteSocket = deleteSocket;
+exports.deleteMeeting = deleteMeeting;

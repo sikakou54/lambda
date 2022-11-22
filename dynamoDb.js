@@ -137,30 +137,41 @@ async function dynamoHandler(_type, _params) {
     return obj;
 }
 
-exports.Put = async (_params) => {
+async function Put(_params) {
     return await dynamoHandler(type.put, _params);
-};
+}
 
-exports.Delete = async (_params) => {
+async function Delete(_params) {
     return await dynamoHandler(type.delete, _params);
-};
+}
 
-exports.Update = async (_params) => {
+async function Update(_params) {
     return await dynamoHandler(type.update, _params);
-};
+}
 
-exports.Query = async (_params) => {
+async function Query(_params) {
     return await dynamoHandler(type.query, _params);
-};
+}
 
-exports.Get = async (_params) => {
+async function Get(_params) {
     return await dynamoHandler(type.get, _params);
-};
+}
 
-exports.TransWrite = async (_params) => {
+async function TransWrite(_params) {
     return await dynamoHandler(type.transWrite, _params);
-};
+}
 
-exports.TransGet = async (_params) => {
+async function TransGet(_params) {
     return await dynamoHandler(type.transGet, _params);
-};
+}
+
+/**
+ * exports
+ */
+exports.Put = Put;
+exports.Delete = Delete;
+exports.Update = Update;
+exports.Query = Query;
+exports.Get = Get;
+exports.TransWrite = TransWrite;
+exports.TransGet = TransGet;
