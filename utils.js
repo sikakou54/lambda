@@ -6,7 +6,7 @@ function getTimeStamp() {
     return (new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000))).toLocaleString();
 }
 
-function getTimeStamp(offset) {
+function getUtcMsec(offset) {
     return (new Date()).getTime() + offset;
 }
 
@@ -15,4 +15,4 @@ function getTimeStamp(offset) {
  */
 exports.sleep = sleep;
 exports.getTimeStamp = getTimeStamp;
-exports.getUtcMsec = getTimeStamp;
+exports.getUtcMsec = getUtcMsec;
