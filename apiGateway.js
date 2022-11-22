@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk');
+const { sleep } = require('./utils');
 const apiGateway = new AWS.ApiGatewayManagementApi({
     apiVersion: '2018-11-29',
     endpoint: 'vx92a3mpjf.execute-api.ap-northeast-1.amazonaws.com/production'
