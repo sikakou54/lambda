@@ -2,7 +2,7 @@ const { Query, Update, Delete, TransWrite, Put } = require('./dynamoDb');
 const { getTimeStamp } = require('./utils');
 const { notify } = require('./apiGateway');
 const { createMeeting, createAttendee, deleteMeeting } = require('./chime');
-const { userJoinType, userNorify } = require('./define');
+const { progress, userJoinType, userNorify } = require('./define');
 const discussionWatcherMax = 100;
 
 async function getDiscussion(_country, _postId) {
@@ -682,8 +682,9 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
                     country: _country
                 },
                 UpdateExpression: 'set #positive.#state = :join, #positive.#socketId = :socketId, #positive.#userId = :userId',
-                ConditionExpression: '#positive.#state = :none AND #positive.#socketId = :none AND #positive.#userId = :none',
+                ConditionExpression: '#progress <> :vote AND #progress <> :result AND #positive.#state = :none AND #positive.#socketId = :none AND #positive.#userId = :none',
                 ExpressionAttributeNames: {
+                    "#progress": 'progress',
                     '#positive': 'positive',
                     '#userId': 'userId',
                     "#socketId": 'socketId',
@@ -693,7 +694,9 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
                     ':userId': _userId,
                     ':socketId': _socketId,
                     ':join': 'join',
-                    ':none': 'none'
+                    ':none': 'none',
+                    ':vote': progress.vote,
+                    ':result': progress.result
                 }
             }
         }
@@ -732,8 +735,9 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
                     country: _country
                 },
                 UpdateExpression: 'set #negative.#state = :join, #negative.#socketId = :socketId, #negative.#userId = :userId',
-                ConditionExpression: '#negative.#state = :none AND #negative.#socketId = :none AND #negative.#userId = :none',
+                ConditionExpression: '#progress <> :vote AND #progress <> :result AND #negative.#state = :none AND #negative.#socketId = :none AND #negative.#userId = :none',
                 ExpressionAttributeNames: {
+                    "#progress": 'progress',
                     '#negative': 'negative',
                     '#userId': 'userId',
                     "#socketId": 'socketId',
@@ -743,7 +747,9 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
                     ':userId': _userId,
                     ':socketId': _socketId,
                     ':join': 'join',
-                    ':none': 'none'
+                    ':none': 'none',
+                    ':vote': progress.vote,
+                    ':result': progress.result
                 }
             }
         }
@@ -782,8 +788,9 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
                     country: _country
                 },
                 UpdateExpression: 'SET #watchers = list_append(#watchers, :value)',
-                ConditionExpression: 'size(#watchers) < :discussionWatcherMax',
+                ConditionExpression: '#progress <> :vote AND #progress <> :result AND size(#watchers) < :discussionWatcherMax',
                 ExpressionAttributeNames: {
+                    "#progress": 'progress',
                     '#watchers': "watchers",
                 },
                 ExpressionAttributeValues: {
@@ -794,7 +801,9 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
                         judge: 'none',
                         version: 0
                     }],
-                    ':discussionWatcherMax': discussionWatcherMax
+                    ':discussionWatcherMax': discussionWatcherMax,
+                    ':vote': progress.vote,
+                    ':result': progress.result
                 }
             }
         }]);
