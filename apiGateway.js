@@ -6,6 +6,22 @@ const apiGateway = new AWS.ApiGatewayManagementApi({
     endpoint: 'vx92a3mpjf.execute-api.ap-northeast-1.amazonaws.com/production'
 });
 
+async function notifys(_sokets, _data) {
+
+    let users = [];
+
+    for (let i = 0; i < _sokets.length; i++) {
+        users.push(new Promise(async (resolve) => {
+            await notify(_sokets[i], _data);
+            resolve(true);
+        }));
+    }
+
+    if (0 < users.length) {
+        await Promise.all(users);
+    }
+}
+
 async function notify(_socketId, _data) {
 
     let retry = 0;
@@ -54,3 +70,4 @@ async function notify(_socketId, _data) {
  * exports
  */
 exports.notify = notify;
+exports.notifys = notifys;
