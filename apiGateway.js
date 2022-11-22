@@ -1,4 +1,5 @@
 const AWS = require('aws-sdk');
+AWS.config.credentials = new AWS.Credentials('AKIAZM7CB6TBRTQFX45K', 'ScElcNk7urEGak0unfLutQAG6Mvf2a5G/w4/1+oB', null);
 const { sleep } = require('./utils');
 const apiGateway = new AWS.ApiGatewayManagementApi({
     apiVersion: '2018-11-29',
