@@ -1,7 +1,6 @@
 const AWS = require('aws-sdk');
 const dynamo = new AWS.DynamoDB.DocumentClient();
 const { sleep } = require('./utils');
-
 const type = {
     put: 0,
     update: 1,
@@ -24,20 +23,13 @@ function isDynamoDbRetry(statusCode, code) {
             'ProvisionedThroughputExceededException' === code ||
             'RequestLimitExceeded' === code ||
             'ThrottlingException' === code) {
-
-            // リトライする
             result = true;
         }
 
         // 503系エラーの場合
     } else if (503 === statusCode) {
-
-        // リトライする
         result = true;
-
     } else {
-
-        // リトライしない
         result = false;
     }
 
@@ -105,32 +97,24 @@ async function dynamoHandler(_type, _params) {
             obj.result = true;
             obj.data = data;
             obj.error = null;
-
-            // リトライしない
             break;
 
         } catch (e) {
 
-            console.log(e);
+            console.error('dynamoHandler', JSON.stringify(e));
 
             obj.result = false;
             obj.data = null;
             obj.error = e;
 
             if (isDynamoDbRetry(e.statusCode, e.code)) {
-
-                // リトライ回数 * 10msec 待機する
                 await sleep(retry * 10);
-
             } else {
-
-                // リトライしない
                 break;
             }
 
         }
 
-        // リトライ回数を加算する
         retry++;
     }
 

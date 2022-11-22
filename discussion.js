@@ -1,10 +1,8 @@
-const AWS = require('aws-sdk');
-AWS.config.credentials = new AWS.Credentials('AKIAZM7CB6TBRTQFX45K', 'ScElcNk7urEGak0unfLutQAG6Mvf2a5G/w4/1+oB', null);
-const chime = new AWS.Chime({ region: 'us-east-1' });
-chime.endpoint = new AWS.Endpoint('https://service.chime.aws.amazon.com');
 const { Query, Update, Delete, TransWrite, Put } = require('./dynamoDb');
-const { sleep, getTimeStamp } = require('./utils');
-const { userJoinType } = require('./define');
+const { getTimeStamp } = require('./utils');
+const { notify } = require('./apiGateway');
+const { createMeeting, createAttendee, deleteMeeting } = require('./chime');
+const { userJoinType, userNorify } = require('./define');
 const discussionWatcherMax = 100;
 
 async function getDiscussion(_country, _postId) {
@@ -161,35 +159,9 @@ async function getDiscussionLimitTime(_country, _postId) {
     return limitTime;
 }
 
-async function getDiscussionMeetingAttendees(_meetingId, _externalUserId) {
+async function getDiscussionMeetingAttendees(_meetingId, _socketId) {
 
-    let attendee = null;
-    let retry = 0;
-
-    while (true) {
-
-        try {
-
-            attendee = await chime.createAttendee({
-                MeetingId: _meetingId,
-                ExternalUserId: _externalUserId,
-            }).promise();
-
-            break;
-
-        } catch (e) {
-            console.error('getAttendeeInfo', JSON.stringify(e));
-            if (429 === e.statusCode) {
-                await sleep(retry * 10);
-            } else {
-                break;
-            }
-        }
-
-        retry++;
-    }
-
-    return attendee;
+    return await createAttendee(_meetingId, _socketId);
 }
 
 async function getDiscussionMeetingConfig(_country, _postId, _socketId) {
@@ -645,11 +617,7 @@ async function setDiscussionProgress(_country, _postId, _progress) {
 
 async function setDiscussionMeeting(_country, _postId) {
 
-    const meeting = await chime.createMeeting({
-        ClientRequestToken: _postId,
-        ExternalMeetingId: _postId,
-        MediaRegion: 'us-east-1'
-    }).promise();
+    const meeting = await createMeeting(_postId);
 
     await Put({
         TableName: 'meetingTable',
@@ -691,7 +659,7 @@ async function setDiscussionResult(_country, _postId, _progress, _users) {
 
 async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _joinType) {
 
-    await TransWrite([
+    const { result } = await TransWrite([
         {
             Put: {
                 TableName: 'socketTable',
@@ -730,11 +698,18 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
             }
         }
     ]);
+
+    if (!result) {
+        await notify(_socketId, {
+            notify: userNorify.notifyJoinImpossibleRequest,
+            data: null
+        });
+    }
 }
 
 async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _joinType) {
 
-    await TransWrite([
+    const { result } = await TransWrite([
         {
             Put: {
                 TableName: 'socketTable',
@@ -773,11 +748,18 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
             }
         }
     ]);
+
+    if (!result) {
+        await notify(_socketId, {
+            notify: userNorify.notifyJoinImpossibleRequest,
+            data: null
+        });
+    }
 }
 
 async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joinType) {
 
-    await TransWrite([
+    const { result } = await TransWrite([
         {
             Put: {
                 TableName: 'socketTable',
@@ -816,6 +798,13 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
                 }
             }
         }]);
+
+    if (!result) {
+        await notify(_socketId, {
+            notify: userNorify.notifyJoinImpossibleRequest,
+            data: null
+        });
+    }
 }
 
 async function deleteSocket(_type, _socketId) {
@@ -829,7 +818,7 @@ async function deleteSocket(_type, _socketId) {
     });
 }
 
-async function deleteMeeting(_country, _postId) {
+async function deleteDiscussionMeeting(_country, _postId) {
 
     const { data } = await Query({
         TableName: 'meetingTable',
@@ -847,9 +836,7 @@ async function deleteMeeting(_country, _postId) {
     });
 
     if (0 < data.Count) {
-        await chime.deleteMeeting({
-            MeetingId: data.Items[0].Meeting.MeetingId
-        }).promise();
+        await deleteMeeting(data.Items[0].Meeting.MeetingId);
     }
 }
 
@@ -883,4 +870,4 @@ exports.setDiscussionProgress = setDiscussionProgress;
 exports.setDiscussionMeeting = setDiscussionMeeting;
 exports.setDiscussionResult = setDiscussionResult;
 exports.deleteSocket = deleteSocket;
-exports.deleteMeeting = deleteMeeting;
+exports.deleteDiscussionMeeting = deleteDiscussionMeeting;
