@@ -274,13 +274,13 @@ async function getSockets(_type, _postId) {
     return sockets;
 }
 
-async function getUser(_country, _postId) {
+async function getUser(_userId) {
 
     let user = null;
 
     // discussionTableのデータを取得する
     const { data } = await Query({
-        TableName: "discussionTable",
+        TableName: "userTable",
         KeyConditionExpression: "#userId = :userId",
         ExpressionAttributeNames: {
             "#userId": 'userId'
