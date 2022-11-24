@@ -131,7 +131,7 @@ async function getDiscussions(_country, _keys) {
         param.ExclusiveStartKey = {
             country: _country,
             createAt: _keys.createAt,
-            postId: _keys.postId
+            //postId: _keys.postId
         };
     }
 
