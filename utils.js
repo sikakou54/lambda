@@ -9,7 +9,7 @@ function getTimeStamp() {
     return (new Date(Date.now() + ((new Date().getTimezoneOffset() + (9 * 60)) * 60 * 1000))).toLocaleString();
 }
 
-function getUtcMsec(offset) {
+function getUtcMsec(offset = 0) {
     return (new Date()).getTime() + offset;
 }
 
