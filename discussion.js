@@ -127,7 +127,7 @@ async function getDiscussions(_country) {
     });
 
     if (res.result && 0 < res.data.Count) {
-        discussions = res.data.Items;
+        discussions = res.data;
     }
 
     return discussions;
