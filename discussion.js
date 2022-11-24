@@ -125,7 +125,7 @@ async function getDiscussions(_country) {
             ':pub': true,
             ':country': _country
         },
-        //          Limit:30
+        Limit: 10
     });
 
     if (res.result && 0 < res.data.Count) {
