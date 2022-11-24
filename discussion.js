@@ -106,7 +106,9 @@ async function getDiscussionAttendees(_country, _postId) {
 }
 async function getDiscussions(_country) {
 
-    let discussions = [];
+    let discussions = {
+        Items: []
+    };
 
     // discussionTableのデータを取得する
     const res = await Query({
