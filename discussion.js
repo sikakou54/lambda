@@ -1,5 +1,5 @@
 const { Query, Update, Delete, TransWrite, Put } = require('./dynamoDb');
-const { getTimeStamp } = require('./utils');
+const { getUtcMsec } = require('./utils');
 const { notify } = require('./apiGateway');
 const { createMeeting, createAttendee, deleteMeeting } = require('./chime');
 const { progress, userJoinType, userNorify } = require('./define');
@@ -552,7 +552,7 @@ async function setDiscussion(_country, _postId, _userId, _title, _detail) {
         Item: {
             country: _country,
             postId: _postId,
-            createAt: getTimeStamp(),
+            createAt: getUtcMsec(),
             pub: true,
             userId: _userId,
             title: _title,
@@ -582,8 +582,8 @@ async function setUser(_userId, _name) {
         TableName: "userTable",
         Item: {
             userId: _userId,
-            createAt: getTimeStamp(),
-            updateAt: getTimeStamp(),
+            createAt: getUtcMsec(),
+            updateAt: getUtcMsec(),
             status: "none",
             name: _name,
             version: 0
@@ -663,7 +663,7 @@ async function setDiscussionResult(_country, _postId, _progress, _users) {
         Item: {
             postId: _postId,
             country: _country,
-            createAt: getTimeStamp(),
+            createAt: getUtcMsec(),
             ...data
         }
     });
@@ -682,7 +682,7 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
                     postId: _postId,
                     country: _country,
                     joinType: _joinType,
-                    createAt: getTimeStamp()
+                    createAt: getUtcMsec()
                 }
             }
         },
@@ -735,7 +735,7 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
                     postId: _postId,
                     country: _country,
                     joinType: _joinType,
-                    createAt: getTimeStamp()
+                    createAt: getUtcMsec()
                 }
             }
         },
@@ -788,7 +788,7 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
                     postId: _postId,
                     country: _country,
                     joinType: _joinType,
-                    createAt: getTimeStamp()
+                    createAt: getUtcMsec()
                 }
             }
         },
