@@ -104,7 +104,7 @@ async function getDiscussionAttendees(_country, _postId) {
 
     return attendees;
 }
-async function getDiscussions(_country, _startKey) {
+async function getDiscussions(_country, _keys) {
 
     let discussions = {
         Items: []
@@ -127,8 +127,12 @@ async function getDiscussions(_country, _startKey) {
         Limit: 10
     };
 
-    if (undefined !== _startKey) {
-        param.ExclusiveStartKey = _startKey;
+    if (undefined !== _keys) {
+        param.ExclusiveStartKey = {
+            country: _country,
+            createAt: _keys.createAt,
+            postId: _keys.postId
+        };
     }
 
     // discussionTableのデータを取得する
