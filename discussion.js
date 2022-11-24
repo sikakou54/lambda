@@ -135,6 +135,8 @@ async function getDiscussions(_country, _keys) {
         };
     }
 
+    console.log('Query', param);
+
     // discussionTableのデータを取得する
     const res = await Query(param);
 
