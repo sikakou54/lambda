@@ -104,14 +104,13 @@ async function getDiscussionAttendees(_country, _postId) {
 
     return attendees;
 }
-async function getDiscussions(_country) {
+async function getDiscussions(_country, _startKey) {
 
     let discussions = {
         Items: []
     };
 
-    // discussionTableのデータを取得する
-    const res = await Query({
+    let param = {
         TableName: "discussionTable",
         IndexName: "createAt-index",
         ScanIndexForward: false,
@@ -126,7 +125,14 @@ async function getDiscussions(_country) {
             ':country': _country
         },
         Limit: 10
-    });
+    };
+
+    if (undefined !== _startKey) {
+        param.ExclusiveStartKey = _startKey;
+    }
+
+    // discussionTableのデータを取得する
+    const res = await Query(param);
 
     if (res.result && 0 < res.data.Count) {
         discussions = res.data;
