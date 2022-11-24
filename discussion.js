@@ -127,11 +127,11 @@ async function getDiscussions(_country, _keys) {
         Limit: 10
     };
 
-    if (undefined !== _keys) {
+    if (null !== _keys) {
         param.ExclusiveStartKey = {
             country: _country,
-            createAt: _keys.createAt
-            //postId: _keys.postId
+            createAt: _keys.createAt,
+            postId: _keys.postId
         };
     }
 
