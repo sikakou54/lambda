@@ -101,7 +101,7 @@ async function dynamoHandler(_type, _params) {
 
         } catch (e) {
 
-            console.error('dynamoHandler', JSON.stringify(e));
+            console.error('dynamoHandler', _type, _params, JSON.stringify(e));
 
             obj.result = false;
             obj.data = null;

@@ -124,18 +124,16 @@ async function getDiscussions(_country, _keys) {
             ':pub': true,
             ':country': _country
         },
-        Limit: 10
+        Limit: 30
     };
 
     if (null !== _keys) {
         param.ExclusiveStartKey = {
             country: _country,
-            createAt: Number(_keys.createAt),
+            createAt: _keys.createAt,
             postId: _keys.postId
         };
     }
-
-    console.log('Query', param);
 
     // discussionTableのデータを取得する
     const res = await Query(param);
