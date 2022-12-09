@@ -135,7 +135,6 @@ async function getDiscussions(_country, _keys) {
         };
     }
 
-    // discussionTableのデータを取得する
     const res = await Query(param);
 
     if (res.result && 0 < res.data.Count) {
@@ -545,7 +544,7 @@ async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
     }
 }
 
-async function setDiscussion(_country, _postId, _userId, _title, _detail) {
+async function setDiscussion(_country, _postId, _userId, _title, _detail, _positiveText, _negativeText) {
 
     return await Put({
         TableName: "discussionTable",
@@ -560,12 +559,14 @@ async function setDiscussion(_country, _postId, _userId, _title, _detail) {
             progress: "standby",
             limitTime: 0,
             positive: {
+                text: _positiveText,
                 userId: 'none',
                 socketId: "none",
                 state: "none",
                 version: 0
             },
             negative: {
+                text: _negativeText,
                 userId: 'none',
                 socketId: "none",
                 state: "none",
