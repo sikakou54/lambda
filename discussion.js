@@ -597,6 +597,73 @@ async function setUser(_userId, _name) {
     });
 }
 
+async function setUserResult(_userId, _type) {
+
+    const user = await getUser(_userId);
+
+    if (null !== user) {
+
+        switch (_type) {
+
+            case userResultType.win:
+
+                return await Update({
+                    TableName: 'userTable',
+                    Key: {
+                        userId: _userId
+                    },
+                    UpdateExpression: 'set #result.#win = :win',
+                    ExpressionAttributeNames: {
+                        '#result': 'result',
+                        '#win': 'win'
+                    },
+                    ExpressionAttributeValues: {
+                        ':win': user.result.win + 1
+                    }
+                });
+
+            case userResultType.lose:
+
+                return await Update({
+                    TableName: 'userTable',
+                    Key: {
+                        userId: _userId
+                    },
+                    UpdateExpression: 'set #result.#lose = :lose',
+                    ExpressionAttributeNames: {
+                        '#result': 'result',
+                        '#lose': 'lose'
+                    },
+                    ExpressionAttributeValues: {
+                        ':lose': user.result.lose + 1
+                    }
+                });
+
+            case userResultType.draw:
+
+                return await Update({
+                    TableName: 'userTable',
+                    Key: {
+                        userId: _userId
+                    },
+                    UpdateExpression: 'set #result.#draw = :draw',
+                    ExpressionAttributeNames: {
+                        '#result': 'result',
+                        '#draw': 'draw'
+                    },
+                    ExpressionAttributeValues: {
+                        ':draw': user.result.draw + 1
+                    }
+                });
+
+            default:
+                break;
+        }
+    }
+
+
+}
+
 async function setDiscussionLimitTime(_country, _postId, _limitTime) {
 
     return await Update({
@@ -884,6 +951,7 @@ exports.setPositiveState = setPositiveState;
 exports.setNegativeState = setNegativeState;
 exports.setWatcherVote = setWatcherVote;
 exports.setUser = setUser;
+exports.setUserResult = setUserResult;
 exports.setWatcherState = setWatcherState;
 exports.joinDiscussionPositive = joinDiscussionPositive;
 exports.joinDiscussionNegative = joinDiscussionNegative;

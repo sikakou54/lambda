@@ -23,6 +23,12 @@ exports.userJoinType = {
     watcher: 'watcher',
 };
 
+exports.userResultType = {
+    win: 0,
+    lose: 1,
+    draw: 2
+};
+
 exports.userNorify = {
     notifyStandbyRequest: 'notifyStandbyRequest',
     notifyReadyRequest: 'notifyReadyRequest',
