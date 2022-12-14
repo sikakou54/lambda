@@ -10,11 +10,11 @@ async function getDiscussion(_country, _postId) {
     let discussion = null;
 
     const { data } = await Query({
-        TableName: "discussionTable",
-        KeyConditionExpression: "#country = :country AND #postId = :postId",
+        TableName: 'discussionTable',
+        KeyConditionExpression: '#country = :country AND #postId = :postId',
         ExpressionAttributeNames: {
             '#country': 'country',
-            "#postId": 'postId'
+            '#postId': 'postId'
         },
         ExpressionAttributeValues: {
             ':country': _country,
@@ -111,11 +111,11 @@ async function getDiscussions(_country, _keys) {
     };
 
     let param = {
-        TableName: "discussionTable",
-        IndexName: "createAt-index",
+        TableName: 'discussionTable',
+        IndexName: 'createAt-index',
         ScanIndexForward: false,
-        KeyConditionExpression: "#country = :country",
-        FilterExpression: "#pub = :pub",
+        KeyConditionExpression: '#country = :country',
+        FilterExpression: '#pub = :pub',
         ExpressionAttributeNames: {
             '#country': 'country',
             '#pub': 'pub',
@@ -263,7 +263,7 @@ async function getSockets(_type, _postId) {
     const { data } = await Query({
         TableName: 'socketTable',
         KeyConditionExpression: '#type = :type',
-        FilterExpression: "#postId = :postId",
+        FilterExpression: '#postId = :postId',
         ProjectionExpression: '#socketId',
         ExpressionAttributeNames: {
             '#type': 'type',
@@ -291,10 +291,10 @@ async function getUser(_userId) {
 
     // discussionTableのデータを取得する
     const { data } = await Query({
-        TableName: "userTable",
-        KeyConditionExpression: "#userId = :userId",
+        TableName: 'userTable',
+        KeyConditionExpression: '#userId = :userId',
         ExpressionAttributeNames: {
-            "#userId": 'userId'
+            '#userId': 'userId'
         },
         ExpressionAttributeValues: {
             ':userId': _userId
@@ -425,8 +425,8 @@ async function setWatcherState(_country, _postId, _socketId, _userId, _state) {
                 ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
                 ExpressionAttributeNames: {
                     '#watchers': 'watchers',
-                    "#state": 'state',
-                    "#socketId": 'socketId',
+                    '#state': 'state',
+                    '#socketId': 'socketId',
                     '#userId': 'userId'
                 },
                 ExpressionAttributeValues: {
@@ -475,7 +475,7 @@ async function reSetWatcherState(_country, _postId, _socketId, _userId) {
                 ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
                 ExpressionAttributeNames: {
                     '#watchers': 'watchers',
-                    "#socketId": 'socketId',
+                    '#socketId': 'socketId',
                     '#userId': 'userId'
                 },
                 ExpressionAttributeValues: {
@@ -519,9 +519,9 @@ async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
                 ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
                 ExpressionAttributeNames: {
                     '#watchers': 'watchers',
-                    "#judge": 'judge',
-                    "#userId": 'userId',
-                    "#socketId": 'socketId'
+                    '#judge': 'judge',
+                    '#userId': 'userId',
+                    '#socketId': 'socketId'
                 },
                 ExpressionAttributeValues: {
                     ':judge': _judge,
@@ -547,7 +547,7 @@ async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
 async function setDiscussion(_country, _postId, _userId, _title, _detail, _positiveText, _negativeText) {
 
     return await Put({
-        TableName: "discussionTable",
+        TableName: 'discussionTable',
         Item: {
             country: _country,
             postId: _postId,
@@ -556,20 +556,20 @@ async function setDiscussion(_country, _postId, _userId, _title, _detail, _posit
             userId: _userId,
             title: _title,
             detail: _detail,
-            progress: "standby",
+            progress: 'standby',
             limitTime: 0,
             positive: {
                 text: _positiveText,
                 userId: 'none',
-                socketId: "none",
-                state: "none",
+                socketId: 'none',
+                state: 'none',
                 version: 0
             },
             negative: {
                 text: _negativeText,
                 userId: 'none',
-                socketId: "none",
-                state: "none",
+                socketId: 'none',
+                state: 'none',
                 version: 0
             },
             watchers: []
@@ -580,13 +580,18 @@ async function setDiscussion(_country, _postId, _userId, _title, _detail, _posit
 async function setUser(_userId, _name) {
 
     return await Put({
-        TableName: "userTable",
+        TableName: 'userTable',
         Item: {
             userId: _userId,
             createAt: getUtcMsec(),
             updateAt: getUtcMsec(),
-            status: "none",
+            status: 'none',
             name: _name,
+            result: {
+                win: 0,
+                lose: 0,
+                draw: 0
+            },
             version: 0
         }
     });
@@ -697,11 +702,11 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
                 UpdateExpression: 'set #positive.#state = :join, #positive.#socketId = :socketId, #positive.#userId = :userId',
                 ConditionExpression: '#progress <> :vote AND #progress <> :result AND #positive.#state = :none AND #positive.#socketId = :none AND #positive.#userId = :none',
                 ExpressionAttributeNames: {
-                    "#progress": 'progress',
+                    '#progress': 'progress',
                     '#positive': 'positive',
                     '#userId': 'userId',
-                    "#socketId": 'socketId',
-                    "#state": 'state'
+                    '#socketId': 'socketId',
+                    '#state': 'state'
                 },
                 ExpressionAttributeValues: {
                     ':userId': _userId,
@@ -750,11 +755,11 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
                 UpdateExpression: 'set #negative.#state = :join, #negative.#socketId = :socketId, #negative.#userId = :userId',
                 ConditionExpression: '#progress <> :vote AND #progress <> :result AND #negative.#state = :none AND #negative.#socketId = :none AND #negative.#userId = :none',
                 ExpressionAttributeNames: {
-                    "#progress": 'progress',
+                    '#progress': 'progress',
                     '#negative': 'negative',
                     '#userId': 'userId',
-                    "#socketId": 'socketId',
-                    "#state": 'state'
+                    '#socketId': 'socketId',
+                    '#state': 'state'
                 },
                 ExpressionAttributeValues: {
                     ':userId': _userId,
@@ -803,8 +808,8 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
                 UpdateExpression: 'SET #watchers = list_append(#watchers, :value)',
                 ConditionExpression: '#progress <> :vote AND #progress <> :result AND size(#watchers) < :discussionWatcherMax',
                 ExpressionAttributeNames: {
-                    "#progress": 'progress',
-                    '#watchers': "watchers",
+                    '#progress': 'progress',
+                    '#watchers': 'watchers',
                 },
                 ExpressionAttributeValues: {
                     ':value': [{
