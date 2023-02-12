@@ -265,7 +265,7 @@ function checkProgress(_image) {
     return next;
 }
 
-async function entryStandby(_country, _postId, _progress, _users) {
+async function entryStandby(_postId, _progress, _users) {
 
     // 進捗キャッシュを初期化
     await deleteProgressCacheTable(_postId);
@@ -274,26 +274,26 @@ async function entryStandby(_country, _postId, _progress, _users) {
     await deleteUserCacheTable(_postId);
 }
 
-async function entryReady(_country, _postId, _progress, _users) {
-    await setDiscussionMeeting(_country, _postId);
+async function entryReady(_postId, _progress, _users) {
+    await setDiscussionMeeting(_postId);
 }
 
-async function entryDiscussion(_country, _postId, _progress, _users) {
+async function entryDiscussion(_postId, _progress, _users) {
 
-    await setDiscussionLimitTime(_country, _postId, getUtcMsec(discussionTimeLimit));
+    await setDiscussionLimitTime(_postId, getUtcMsec(discussionTimeLimit));
 }
 
-async function entryVote(_country, _postId, _progress, _users) {
-    await setDiscussionLimitTime(_country, _postId, getUtcMsec(voteTimeLimit));
+async function entryVote(_postId, _progress, _users) {
+    await setDiscussionLimitTime(_postId, getUtcMsec(voteTimeLimit));
 }
 
-async function entryResult(_country, _postId, _progress, _users) {
-    await setDiscussionResult(_country, _postId, _progress, _users);
+async function entryResult(_postId, _progress, _users) {
+    await setDiscussionResult(_postId, _progress, _users);
 }
 
-async function exitDiscussion(_country, _postId, _progress, _users) {
-    await setDiscussionLimitTime(_country, _postId, 0);
-    await deleteDiscussionMeeting(_country, _postId);
+async function exitDiscussion(_postId, _progress, _users) {
+    await setDiscussionLimitTime(_postId, 0);
+    await deleteDiscussionMeeting(_postId);
 }
 
 async function deleteProgressCacheTable(_postId) {
@@ -348,9 +348,9 @@ async function deleteUserCacheTable(_postId) {
 
 }
 
-async function exitResult(_country, _postId, _progress, _users) { }
+async function exitResult(_postId, _progress, _users) { }
 
-async function exit(_country, _postId, _progress, _users) {
+async function exit(_postId, _progress, _users) {
 
     switch (_progress) {
 
@@ -361,14 +361,14 @@ async function exit(_country, _postId, _progress, _users) {
             break;
 
         case progress.discussion:
-            await exitDiscussion(_country, _postId, _progress, _users);
+            await exitDiscussion(_postId, _progress, _users);
             break;
 
         case progress.vote:
             break;
 
         case progress.result:
-            await exitResult(_country, _postId, _progress, _users);
+            await exitResult(_postId, _progress, _users);
             break;
 
         default:
@@ -377,28 +377,28 @@ async function exit(_country, _postId, _progress, _users) {
     }
 }
 
-async function entry(_country, _postId, _progress, _users) {
+async function entry(_postId, _progress, _users) {
 
     switch (_progress) {
 
         case progress.standby:
-            await entryStandby(_country, _postId, _progress, _users);
+            await entryStandby(_postId, _progress, _users);
             break;
 
         case progress.ready:
-            await entryReady(_country, _postId, _progress, _users);
+            await entryReady(_postId, _progress, _users);
             break;
 
         case progress.discussion:
-            await entryDiscussion(_country, _postId, _progress, _users);
+            await entryDiscussion(_postId, _progress, _users);
             break;
 
         case progress.vote:
-            await entryVote(_country, _postId, _progress, _users);
+            await entryVote(_postId, _progress, _users);
             break;
 
         case progress.result:
-            await entryResult(_country, _postId, _progress, _users);
+            await entryResult(_postId, _progress, _users);
             break;
 
         default:
@@ -422,7 +422,7 @@ async function getUserNotifyTable(_preProgress, _nextProgress, _preState, _nextS
     return notify;
 }
 
-async function getUserNotify(_country, _postId, _preProgress, _nextProgress, _preState, _nextState, _user, _oldUsers, _latestUsers) {
+async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _nextState, _user, _oldUsers, _latestUsers) {
 
     let msg = null;
     let notify = null;
@@ -443,7 +443,7 @@ async function getUserNotify(_country, _postId, _preProgress, _nextProgress, _pr
 
         // 討論準備要求通知
         case userNorify.notifyReadyRequest:
-            const config = await getDiscussionMeetingConfig(_country, _postId, _user.socketId);
+            const config = await getDiscussionMeetingConfig(_postId, _user.socketId);
             if (null !== config) {
                 msg = {
                     notify,
@@ -456,7 +456,7 @@ async function getUserNotify(_country, _postId, _preProgress, _nextProgress, _pr
 
         // 討論開始要求通知
         case userNorify.notifyStartRequest:
-            limitTime = await getDiscussionLimitTime(_country, _postId);
+            limitTime = await getDiscussionLimitTime(_postId);
             msg = {
                 notify,
                 data: {
@@ -475,7 +475,7 @@ async function getUserNotify(_country, _postId, _preProgress, _nextProgress, _pr
 
         // 討論結果投票要求通知
         case userNorify.notifyVoteRequest:
-            limitTime = await getDiscussionLimitTime(_country, _postId);
+            limitTime = await getDiscussionLimitTime(_postId);
             msg = {
                 notify,
                 data: {
@@ -486,7 +486,7 @@ async function getUserNotify(_country, _postId, _preProgress, _nextProgress, _pr
 
         // 討論結果取得要求通知
         case userNorify.notifyResultRequest:
-            const result = await getDiscussionResult(_country, _postId);
+            const result = await getDiscussionResult(_postId);
             msg = {
                 notify,
                 data: {
@@ -645,7 +645,7 @@ function stateHandling(records) {
             let promises = [];
             let results = [];
 
-            const { country, postId, oldNextProgress, latestNextProgress, oldUserImage, latestUserImage } = records[i];
+            const { postId, oldNextProgress, latestNextProgress, oldUserImage, latestUserImage } = records[i];
 
             // 進捗に変化がある場合
             if (oldNextProgress !== latestNextProgress) {
@@ -661,13 +661,13 @@ function stateHandling(records) {
                     //console.log('progress', 'latest', latestUserImage.progress + '->' + latestNextProgress);
 
                     // 退出処理
-                    await exit(country, postId, latestUserImage.progress, latestUserImage.users);
+                    await exit(postId, latestUserImage.progress, latestUserImage.users);
 
                     // 進捗状況を更新する
-                    await setDiscussionProgress(country, postId, latestNextProgress);
+                    await setDiscussionProgress(postId, latestNextProgress);
 
                     // 進入処理
-                    await entry(country, postId, latestNextProgress, latestUserImage.users);
+                    await entry(postId, latestNextProgress, latestUserImage.users);
 
                     // 進捗のキャッシュを設定する
                     await writeProgressCache(postId, latestUserImage.progress, latestNextProgress);
@@ -707,7 +707,7 @@ function stateHandling(records) {
                             //console.log('user', 'latest', latestUserImage.users[i].type, latestUserImage.progress + '->' + latestNextProgress, preState + '->' + latestUserImage.users[i].state);
 
                             // 通知を取得する
-                            message = await getUserNotify(country, postId, latestUserImage.progress, latestNextProgress, preState, latestUserImage.users[i].state, latestUserImage.users[i], oldUserImage.users, latestUserImage.users);
+                            message = await getUserNotify(postId, latestUserImage.progress, latestNextProgress, preState, latestUserImage.users[i].state, latestUserImage.users[i], oldUserImage.users, latestUserImage.users);
 
                             // 通知があれば追加する
                             if (null !== message) {
@@ -753,7 +753,6 @@ async function dynamoDbTriggerHandler(records) {
 
         if ('MODIFY' === records[i].eventName) {
 
-            const country = 'jpn';//records[i].dynamodb.Keys.country.S;
             const postId = records[i].dynamodb.Keys.postId.S;
             const oldUserImage = getUsersImage(records[i].dynamodb.OldImage);
             const latestUserImage = getUsersImage(records[i].dynamodb.NewImage);
@@ -765,7 +764,6 @@ async function dynamoDbTriggerHandler(records) {
             }
 
             discussions[postId].records.push({
-                country,
                 postId,
                 oldUserImage,
                 latestUserImage,
