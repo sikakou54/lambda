@@ -84,8 +84,8 @@ const userNotifyTable = [
     /* -> result */
     { preProgress: progress.result, nextProgress: progress.result, preState: userState.none, nextState: userState.join, notify: userNorify.notifyJoinImpossibleRequest }
 ];
-const watchersMax = 1;
-const discussionTimeLimit = 60000;
+const watchersMax = 3;
+const discussionTimeLimit = 600000;
 const voteTimeLimit = 30000;
 
 function checkStandby(_image) {
