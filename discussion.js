@@ -865,6 +865,7 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
         {
             Update: {
                 TableName: 'TABLE_DISCUSSION',
+                IndexName: 'country-postId-index',
                 Key: {
                     postId: _postId,
                     country: _country
