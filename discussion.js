@@ -316,7 +316,6 @@ async function setPositiveState(_country, _postId, _socketId, _userId, _state) {
     return await Update({
         TableName: 'TABLE_DISCUSSION',
         Key: {
-            country: _country,
             postId: _postId
         },
         UpdateExpression: 'SET #positive.#socketId = :socketId, #positive.#userId = :userId, #positive.#state = :state',
@@ -340,7 +339,6 @@ async function reSetPositiveState(_country, _postId, _socketId, _userId) {
     return await Update({
         TableName: 'TABLE_DISCUSSION',
         Key: {
-            country: _country,
             postId: _postId
         },
         UpdateExpression: 'set #positive.#socketId = :none, #positive.#userId = :none, #positive.#state = :none',
@@ -364,7 +362,6 @@ async function setNegativeState(_country, _postId, _socketId, _userId, _state) {
     return await Update({
         TableName: 'TABLE_DISCUSSION',
         Key: {
-            country: _country,
             postId: _postId
         },
         UpdateExpression: 'SET #negative.#socketId = :socketId, #negative.#userId = :userId, #negative.#state = :state',
@@ -388,7 +385,6 @@ async function reSetNegativeState(_country, _postId, _socketId, _userId) {
     await Update({
         TableName: 'TABLE_DISCUSSION',
         Key: {
-            country: _country,
             postId: _postId
         },
         UpdateExpression: 'set #negative.#socketId = :none, #negative.#userId = :none, #negative.#state = :none',
@@ -421,8 +417,7 @@ async function setWatcherState(_country, _postId, _socketId, _userId, _state) {
             res = await Update({
                 TableName: 'TABLE_DISCUSSION',
                 Key: {
-                    postId: _postId,
-                    country: _country
+                    postId: _postId
                 },
                 UpdateExpression: 'set #watchers[' + index + '].#userId = :userId, #watchers[' + index + '].#socketId = :socketId, #watchers[' + index + '].#state = :state',
                 ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
@@ -471,8 +466,7 @@ async function reSetWatcherState(_country, _postId, _socketId, _userId) {
             res = await Update({
                 TableName: 'TABLE_DISCUSSION',
                 Key: {
-                    postId: _postId,
-                    country: _country
+                    postId: _postId
                 },
                 UpdateExpression: 'remove #watchers[' + index + ']',
                 ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
@@ -515,8 +509,7 @@ async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
             res = await Update({
                 TableName: 'TABLE_DISCUSSION',
                 Key: {
-                    postId: _postId,
-                    country: _country
+                    postId: _postId
                 },
                 UpdateExpression: 'set #watchers[' + index + '].#judge = :judge',
                 ConditionExpression: '#watchers[' + index + '].#socketId = :socketId AND #watchers[' + index + '].#userId = :userId',
@@ -666,8 +659,7 @@ async function setDiscussionLimitTime(_country, _postId, _limitTime) {
     return await Update({
         TableName: 'TABLE_DISCUSSION',
         Key: {
-            postId: _postId,
-            country: _country
+            postId: _postId
         },
         UpdateExpression: 'set #limitTime = :limitTime',
         ExpressionAttributeNames: {
@@ -684,8 +676,7 @@ async function setDiscussionProgress(_country, _postId, _progress) {
     await Update({
         TableName: 'TABLE_DISCUSSION',
         Key: {
-            postId: _postId,
-            country: _country
+            postId: _postId
         },
         UpdateExpression: 'set #progress = :progress',
         ExpressionAttributeNames: {
@@ -760,8 +751,7 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
             Update: {
                 TableName: 'TABLE_DISCUSSION',
                 Key: {
-                    postId: _postId,
-                    country: _country
+                    postId: _postId
                 },
                 UpdateExpression: 'set #positive.#state = :join, #positive.#socketId = :socketId, #positive.#userId = :userId',
                 ConditionExpression: '#progress <> :vote AND #progress <> :result AND #positive.#state = :none AND #positive.#socketId = :none AND #positive.#userId = :none',
@@ -813,8 +803,7 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
             Update: {
                 TableName: 'TABLE_DISCUSSION',
                 Key: {
-                    postId: _postId,
-                    country: _country
+                    postId: _postId
                 },
                 UpdateExpression: 'set #negative.#state = :join, #negative.#socketId = :socketId, #negative.#userId = :userId',
                 ConditionExpression: '#progress <> :vote AND #progress <> :result AND #negative.#state = :none AND #negative.#socketId = :none AND #negative.#userId = :none',
@@ -865,10 +854,8 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
         {
             Update: {
                 TableName: 'TABLE_DISCUSSION',
-                IndexName: 'country-postId-index',
                 Key: {
-                    postId: _postId,
-                    country: _country
+                    postId: _postId
                 },
                 UpdateExpression: 'SET #watchers = list_append(#watchers, :value)',
                 ConditionExpression: '#progress <> :vote AND #progress <> :result AND size(#watchers) < :discussionWatcherMax',
