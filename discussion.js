@@ -5,20 +5,17 @@ const { createMeeting, createAttendee, deleteMeeting } = require('./chime');
 const { progress, userJoinType, userNorify } = require('./define');
 const discussionWatcherMax = 100;
 
-async function getDiscussion(_country, _postId) {
+async function getDiscussion(_postId) {
 
     let discussion = null;
 
     const { data } = await Query({
         TableName: 'TABLE_DISCUSSION',
-        IndexName: 'country-postId-index',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        KeyConditionExpression: '#postId = :postId',
         ExpressionAttributeNames: {
-            '#country': 'country',
             '#postId': 'postId'
         },
         ExpressionAttributeValues: {
-            ':country': _country,
             ':postId': _postId
         }
     });
@@ -30,10 +27,10 @@ async function getDiscussion(_country, _postId) {
     return discussion;
 }
 
-async function getWatcherIndex(_country, _postId, _socketId, _userId) {
+async function getWatcherIndex(_postId, _socketId, _userId) {
 
     let index = -1;
-    const discussion = await getDiscussion(_country, _postId);
+    const discussion = await getDiscussion(_postId);
 
     if (null !== discussion) {
         const { watchers } = discussion;
@@ -44,21 +41,19 @@ async function getWatcherIndex(_country, _postId, _socketId, _userId) {
     return index;
 }
 
-async function getDiscussionMeeting(_country, _postId) {
+async function getDiscussionMeeting(_postId) {
 
     let meeting = null;
 
     const { data } = await Query({
-        TableName: 'meetingTable',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        TableName: 'TABLE_MEETING',
+        KeyConditionExpression: '#postId = :postId',
         ProjectionExpression: '#Meeting',
         ExpressionAttributeNames: {
-            '#country': 'country',
             '#postId': 'postId',
             '#Meeting': 'Meeting'
         },
         ExpressionAttributeValues: {
-            ':country': _country,
             ':postId': _postId
         }
     });
@@ -70,7 +65,7 @@ async function getDiscussionMeeting(_country, _postId) {
     return meeting;
 }
 
-async function getDiscussionAttendees(_country, _postId) {
+async function getDiscussionAttendees(_postId) {
 
     let attendees = {
         positive: 0,
@@ -80,18 +75,15 @@ async function getDiscussionAttendees(_country, _postId) {
 
     const { data } = await Query({
         TableName: 'TABLE_DISCUSSION',
-        IndexName: 'country-postId-index',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        KeyConditionExpression: '#postId = :postId',
         ProjectionExpression: '#positive, #negative, #watchers',
         ExpressionAttributeNames: {
-            '#country': 'country',
             '#postId': 'postId',
             '#positive': 'positive',
             '#negative': 'negative',
             '#watchers': 'watchers',
         },
         ExpressionAttributeValues: {
-            ':country': _country,
             ':postId': _postId
         }
     });
@@ -146,22 +138,19 @@ async function getDiscussions(_country, _keys) {
     return discussions;
 }
 
-async function getDiscussionLimitTime(_country, _postId) {
+async function getDiscussionLimitTime(_postId) {
 
     let limitTime = 0;
 
     const { data } = await Query({
         TableName: 'TABLE_DISCUSSION',
-        IndexName: 'country-postId-index',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        KeyConditionExpression: '#postId = :postId',
         ProjectionExpression: '#limitTime',
         ExpressionAttributeNames: {
-            '#country': 'country',
             '#postId': 'postId',
             '#limitTime': 'limitTime'
         },
         ExpressionAttributeValues: {
-            ':country': _country,
             ':postId': _postId
         }
     });
@@ -174,18 +163,17 @@ async function getDiscussionLimitTime(_country, _postId) {
 }
 
 async function getDiscussionMeetingAttendees(_meetingId, _socketId) {
-
     return await createAttendee(_meetingId, _socketId);
 }
 
-async function getDiscussionMeetingConfig(_country, _postId, _socketId) {
+async function getDiscussionMeetingConfig(_postId, _socketId) {
 
     let result = null;
     let meeting = null;
     let attendee = null;
 
     // ミーティング情報を取得する
-    meeting = await getDiscussionMeeting(_country, _postId);
+    meeting = await getDiscussionMeeting(_postId);
 
     // 取得できた場合
     if (null !== meeting) {
@@ -206,23 +194,21 @@ async function getDiscussionMeetingConfig(_country, _postId, _socketId) {
     return result;
 }
 
-async function getDiscussionResult(_country, _postId) {
+async function getDiscussionResult(_postId) {
 
     let result = null;
 
     const { data } = await Query({
-        TableName: 'resultTable',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        TableName: 'TABLE_RESULT',
+        KeyConditionExpression: '#postId = :postId',
         ProjectionExpression: '#positive, #negative, #win',
         ExpressionAttributeNames: {
             '#positive': 'positive',
             '#negative': 'negative',
             '#win': 'win',
-            '#country': 'country',
             '#postId': 'postId',
         },
         ExpressionAttributeValues: {
-            ':country': _country,
             ':postId': _postId
         }
     });
@@ -311,7 +297,7 @@ async function getUser(_userId) {
     return user;
 }
 
-async function setPositiveState(_country, _postId, _socketId, _userId, _state) {
+async function setPositiveState(_postId, _socketId, _userId, _state) {
 
     return await Update({
         TableName: 'TABLE_DISCUSSION',
@@ -334,7 +320,7 @@ async function setPositiveState(_country, _postId, _socketId, _userId, _state) {
     });
 }
 
-async function reSetPositiveState(_country, _postId, _socketId, _userId) {
+async function reSetPositiveState(_postId, _socketId, _userId) {
 
     return await Update({
         TableName: 'TABLE_DISCUSSION',
@@ -357,7 +343,7 @@ async function reSetPositiveState(_country, _postId, _socketId, _userId) {
     });
 }
 
-async function setNegativeState(_country, _postId, _socketId, _userId, _state) {
+async function setNegativeState(_postId, _socketId, _userId, _state) {
 
     return await Update({
         TableName: 'TABLE_DISCUSSION',
@@ -380,7 +366,7 @@ async function setNegativeState(_country, _postId, _socketId, _userId, _state) {
     });
 }
 
-async function reSetNegativeState(_country, _postId, _socketId, _userId) {
+async function reSetNegativeState(_postId, _socketId, _userId) {
 
     await Update({
         TableName: 'TABLE_DISCUSSION',
@@ -403,14 +389,14 @@ async function reSetNegativeState(_country, _postId, _socketId, _userId) {
     });
 }
 
-async function setWatcherState(_country, _postId, _socketId, _userId, _state) {
+async function setWatcherState(_postId, _socketId, _userId, _state) {
 
     let index = 0;
     let res = null;
 
     while (true) {
 
-        index = await getWatcherIndex(_country, _postId, _socketId, _userId);
+        index = await getWatcherIndex(_postId, _socketId, _userId);
 
         if (-1 !== index) {
 
@@ -452,14 +438,14 @@ async function setWatcherState(_country, _postId, _socketId, _userId, _state) {
     return res;
 }
 
-async function reSetWatcherState(_country, _postId, _socketId, _userId) {
+async function reSetWatcherState(_postId, _socketId, _userId) {
 
     let index = 0;
     let res = null;
 
     while (true) {
 
-        index = await getWatcherIndex(_country, _postId, _socketId, _userId);
+        index = await getWatcherIndex(_postId, _socketId, _userId);
 
         if (-1 !== index) {
 
@@ -495,14 +481,14 @@ async function reSetWatcherState(_country, _postId, _socketId, _userId) {
     }
 }
 
-async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
+async function setWatcherVote(_postId, _socketId, _userId, _judge) {
 
     let index = 0;
     let res = null;
 
     while (true) {
 
-        index = await getWatcherIndex(_country, _postId, _socketId, _userId);
+        index = await getWatcherIndex(_postId, _socketId, _userId);
 
         if (-1 !== index) {
 
@@ -654,7 +640,7 @@ async function setUserResult(_userId, _type, _count) {
 
 }
 
-async function setDiscussionLimitTime(_country, _postId, _limitTime) {
+async function setDiscussionLimitTime(_postId, _limitTime) {
 
     return await Update({
         TableName: 'TABLE_DISCUSSION',
@@ -671,7 +657,7 @@ async function setDiscussionLimitTime(_country, _postId, _limitTime) {
     });
 }
 
-async function setDiscussionProgress(_country, _postId, _progress) {
+async function setDiscussionProgress(_postId, _progress) {
 
     await Update({
         TableName: 'TABLE_DISCUSSION',
@@ -688,21 +674,20 @@ async function setDiscussionProgress(_country, _postId, _progress) {
     });
 }
 
-async function setDiscussionMeeting(_country, _postId) {
+async function setDiscussionMeeting(_postId) {
 
     const meeting = await createMeeting(_postId);
 
     await Put({
-        TableName: 'meetingTable',
+        TableName: 'TABLE_MEETING',
         Item: {
-            country: _country,
             postId: _postId,
             ...meeting
         }
     });
 }
 
-async function setDiscussionResult(_country, _postId, _progress, _users) {
+async function setDiscussionResult(_postId, _progress, _users) {
 
     let data = {};
     const positiveWatchers = _users.filter((v) => v.type === userJoinType.watcher && v.judge === userJoinType.positive);
@@ -720,17 +705,16 @@ async function setDiscussionResult(_country, _postId, _progress, _users) {
     }
 
     await Put({
-        TableName: 'resultTable',
+        TableName: 'TABLE_RESULT',
         Item: {
             postId: _postId,
-            country: _country,
             createAt: getUtcMsec(),
             ...data
         }
     });
 }
 
-async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _joinType) {
+async function joinDiscussionPositive(_postId, _socketId, _userId, _joinType) {
 
     const { result } = await TransWrite([
         {
@@ -741,7 +725,6 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
                     socketId: _socketId,
                     userId: _userId,
                     postId: _postId,
-                    country: _country,
                     joinType: _joinType,
                     createAt: getUtcMsec()
                 }
@@ -782,7 +765,7 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
     }
 }
 
-async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _joinType) {
+async function joinDiscussionNegative(_postId, _socketId, _userId, _joinType) {
 
     const { result } = await TransWrite([
         {
@@ -793,7 +776,6 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
                     socketId: _socketId,
                     userId: _userId,
                     postId: _postId,
-                    country: _country,
                     joinType: _joinType,
                     createAt: getUtcMsec()
                 }
@@ -834,7 +816,7 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
     }
 }
 
-async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joinType) {
+async function joinDiscussionWatcher(_postId, _socketId, _userId, _joinType) {
 
     const { result } = await TransWrite([
         {
@@ -845,7 +827,6 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
                     socketId: _socketId,
                     userId: _userId,
                     postId: _postId,
-                    country: _country,
                     joinType: _joinType,
                     createAt: getUtcMsec()
                 }
@@ -897,19 +878,17 @@ async function deleteSocket(_type, _socketId) {
     });
 }
 
-async function deleteDiscussionMeeting(_country, _postId) {
+async function deleteDiscussionMeeting(_postId) {
 
     const { data } = await Query({
-        TableName: 'meetingTable',
-        KeyConditionExpression: '#country = :country AND #postId = :postId',
+        TableName: 'TABLE_MEETING',
+        KeyConditionExpression: '#postId = :postId',
         ProjectionExpression: '#Meeting',
         ExpressionAttributeNames: {
-            '#country': 'country',
             '#postId': 'postId',
             '#Meeting': 'Meeting'
         },
         ExpressionAttributeValues: {
-            ':country': _country,
             ':postId': _postId
         }
     });
