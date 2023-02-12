@@ -10,7 +10,8 @@ async function getDiscussion(_country, _postId) {
     let discussion = null;
 
     const { data } = await Query({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
+        IndexName: 'country-postId-index',
         KeyConditionExpression: '#country = :country AND #postId = :postId',
         ExpressionAttributeNames: {
             '#country': 'country',
@@ -78,7 +79,8 @@ async function getDiscussionAttendees(_country, _postId) {
     };
 
     const { data } = await Query({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
+        IndexName: 'country-postId-index',
         KeyConditionExpression: '#country = :country AND #postId = :postId',
         ProjectionExpression: '#positive, #negative, #watchers',
         ExpressionAttributeNames: {
@@ -111,8 +113,8 @@ async function getDiscussions(_country, _keys) {
     };
 
     let param = {
-        TableName: 'discussionTable',
-        IndexName: 'createAt-index',
+        TableName: 'TABLE_DISCUSSION',
+        IndexName: 'country-createAt-index',
         ScanIndexForward: false,
         KeyConditionExpression: '#country = :country',
         FilterExpression: '#pub = :pub',
@@ -124,7 +126,7 @@ async function getDiscussions(_country, _keys) {
             ':pub': true,
             ':country': _country
         },
-        Limit: 30
+        Limit: 50
     };
 
     if (null !== _keys) {
@@ -149,7 +151,8 @@ async function getDiscussionLimitTime(_country, _postId) {
     let limitTime = 0;
 
     const { data } = await Query({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
+        IndexName: 'country-postId-index',
         KeyConditionExpression: '#country = :country AND #postId = :postId',
         ProjectionExpression: '#limitTime',
         ExpressionAttributeNames: {
@@ -311,7 +314,7 @@ async function getUser(_userId) {
 async function setPositiveState(_country, _postId, _socketId, _userId, _state) {
 
     return await Update({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Key: {
             country: _country,
             postId: _postId
@@ -335,7 +338,7 @@ async function setPositiveState(_country, _postId, _socketId, _userId, _state) {
 async function reSetPositiveState(_country, _postId, _socketId, _userId) {
 
     return await Update({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Key: {
             country: _country,
             postId: _postId
@@ -359,7 +362,7 @@ async function reSetPositiveState(_country, _postId, _socketId, _userId) {
 async function setNegativeState(_country, _postId, _socketId, _userId, _state) {
 
     return await Update({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Key: {
             country: _country,
             postId: _postId
@@ -383,7 +386,7 @@ async function setNegativeState(_country, _postId, _socketId, _userId, _state) {
 async function reSetNegativeState(_country, _postId, _socketId, _userId) {
 
     await Update({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Key: {
             country: _country,
             postId: _postId
@@ -416,7 +419,7 @@ async function setWatcherState(_country, _postId, _socketId, _userId, _state) {
         if (-1 !== index) {
 
             res = await Update({
-                TableName: 'discussionTable',
+                TableName: 'TABLE_DISCUSSION',
                 Key: {
                     postId: _postId,
                     country: _country
@@ -466,7 +469,7 @@ async function reSetWatcherState(_country, _postId, _socketId, _userId) {
         if (-1 !== index) {
 
             res = await Update({
-                TableName: 'discussionTable',
+                TableName: 'TABLE_DISCUSSION',
                 Key: {
                     postId: _postId,
                     country: _country
@@ -510,7 +513,7 @@ async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
         if (-1 !== index) {
 
             res = await Update({
-                TableName: 'discussionTable',
+                TableName: 'TABLE_DISCUSSION',
                 Key: {
                     postId: _postId,
                     country: _country
@@ -547,7 +550,7 @@ async function setWatcherVote(_country, _postId, _socketId, _userId, _judge) {
 async function setDiscussion(_country, _postId, _userId, _title, _detail, _positiveText, _negativeText) {
 
     return await Put({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Item: {
             country: _country,
             postId: _postId,
@@ -597,77 +600,71 @@ async function setUser(_userId, _name) {
     });
 }
 
-async function setUserResult(_userId, _type) {
+async function setUserResult(_userId, _type, _count) {
 
-    const user = await getUser(_userId);
+    switch (_type) {
 
-    if (null !== user) {
+        case userResultType.win:
 
-        switch (_type) {
+            return await Update({
+                TableName: 'userTable',
+                Key: {
+                    userId: _userId
+                },
+                UpdateExpression: 'set #result.#win = :win',
+                ExpressionAttributeNames: {
+                    '#result': 'result',
+                    '#win': 'win'
+                },
+                ExpressionAttributeValues: {
+                    ':win': _count
+                }
+            });
 
-            case userResultType.win:
+        case userResultType.lose:
 
-                return await Update({
-                    TableName: 'userTable',
-                    Key: {
-                        userId: _userId
-                    },
-                    UpdateExpression: 'set #result.#win = :win',
-                    ExpressionAttributeNames: {
-                        '#result': 'result',
-                        '#win': 'win'
-                    },
-                    ExpressionAttributeValues: {
-                        ':win': user.result.win + 1
-                    }
-                });
+            return await Update({
+                TableName: 'userTable',
+                Key: {
+                    userId: _userId
+                },
+                UpdateExpression: 'set #result.#lose = :lose',
+                ExpressionAttributeNames: {
+                    '#result': 'result',
+                    '#lose': 'lose'
+                },
+                ExpressionAttributeValues: {
+                    ':lose': _count
+                }
+            });
 
-            case userResultType.lose:
+        case userResultType.draw:
 
-                return await Update({
-                    TableName: 'userTable',
-                    Key: {
-                        userId: _userId
-                    },
-                    UpdateExpression: 'set #result.#lose = :lose',
-                    ExpressionAttributeNames: {
-                        '#result': 'result',
-                        '#lose': 'lose'
-                    },
-                    ExpressionAttributeValues: {
-                        ':lose': user.result.lose + 1
-                    }
-                });
+            return await Update({
+                TableName: 'userTable',
+                Key: {
+                    userId: _userId
+                },
+                UpdateExpression: 'set #result.#draw = :draw',
+                ExpressionAttributeNames: {
+                    '#result': 'result',
+                    '#draw': 'draw'
+                },
+                ExpressionAttributeValues: {
+                    ':draw': _count
+                }
+            });
 
-            case userResultType.draw:
-
-                return await Update({
-                    TableName: 'userTable',
-                    Key: {
-                        userId: _userId
-                    },
-                    UpdateExpression: 'set #result.#draw = :draw',
-                    ExpressionAttributeNames: {
-                        '#result': 'result',
-                        '#draw': 'draw'
-                    },
-                    ExpressionAttributeValues: {
-                        ':draw': user.result.draw + 1
-                    }
-                });
-
-            default:
-                break;
-        }
+        default:
+            break;
     }
-
 
 }
 
 async function setDiscussionLimitTime(_country, _postId, _limitTime) {
 
     return await Update({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Key: {
             postId: _postId,
             country: _country
@@ -685,7 +682,7 @@ async function setDiscussionLimitTime(_country, _postId, _limitTime) {
 async function setDiscussionProgress(_country, _postId, _progress) {
 
     await Update({
-        TableName: 'discussionTable',
+        TableName: 'TABLE_DISCUSSION',
         Key: {
             postId: _postId,
             country: _country
@@ -761,7 +758,7 @@ async function joinDiscussionPositive(_country, _postId, _socketId, _userId, _jo
         },
         {
             Update: {
-                TableName: 'discussionTable',
+                TableName: 'TABLE_DISCUSSION',
                 Key: {
                     postId: _postId,
                     country: _country
@@ -814,7 +811,7 @@ async function joinDiscussionNegative(_country, _postId, _socketId, _userId, _jo
         },
         {
             Update: {
-                TableName: 'discussionTable',
+                TableName: 'TABLE_DISCUSSION',
                 Key: {
                     postId: _postId,
                     country: _country
@@ -867,7 +864,7 @@ async function joinDiscussionWatcher(_country, _postId, _socketId, _userId, _joi
         },
         {
             Update: {
-                TableName: 'discussionTable',
+                TableName: 'TABLE_DISCUSSION',
                 Key: {
                     postId: _postId,
                     country: _country
