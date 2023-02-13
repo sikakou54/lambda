@@ -127,23 +127,21 @@ function checkReady(_image) {
 
     } else {
 
-        positive = _image.users.filter((v) => v.type === userJoinType.positive && (v.state === userState.standby || v.state === userState.online));
-        negative = _image.users.filter((v) => v.type === userJoinType.negative && (v.state === userState.standby || v.state === userState.online));
-        watchersOnline = _image.users.filter((v) => v.type === userJoinType.watcher && (v.state === userState.standby || v.state === userState.online));
+        positive = _image.users.filter((v) => v.type === userJoinType.positive);
+        negative = _image.users.filter((v) => v.type === userJoinType.negative);
 
-        // 以下条件を満たす場合、「準備中」にとどまる。
-        // 肯定と否定が「参加」or「待機中」or「準備中」の場合
-        // 「参加」or「待機中」or「準備中」の視聴者数が３人以上の場合
-        if (0 < positive.length && 0 < negative.length && watchers.length <= watchersOnline.length) {
-
-            // 準備中にとどまる
-            return progress.ready;
-
-        } else {
+        // 開始条件に満たない場合は準備中に戻る
+        if (0 === positive.length || 0 === negative.length || watchers < watchersMax) {
 
             // 待機中に遷移する
             return progress.standby;
+
+        } else {
+
+            // 準備中にとどまる
+            return progress.ready;
         }
+
     }
 }
 
