@@ -109,13 +109,10 @@ async function getDiscussions(_country, _keys) {
         IndexName: 'country-createAt-index',
         ScanIndexForward: false,
         KeyConditionExpression: '#country = :country',
-        FilterExpression: '#pub = :pub',
         ExpressionAttributeNames: {
-            '#country': 'country',
-            '#pub': 'pub',
+            '#country': 'country'
         },
         ExpressionAttributeValues: {
-            ':pub': true,
             ':country': _country
         },
         Limit: 50
@@ -534,7 +531,7 @@ async function setDiscussion(_country, _postId, _userId, _title, _detail, _posit
             country: _country,
             postId: _postId,
             createAt: getUtcMsec(),
-            pub: true,
+            pub: false,
             userId: _userId,
             title: _title,
             detail: _detail,
