@@ -106,8 +106,17 @@ function checkStandby(_image) {
 
     } else {
 
-        // 待機中にとどまる
-        return progress.standby;
+        if (0 === positive.length && 0 === negative.length && 0 === watchers.length) {
+
+            // 討論なし更新
+            return progress.none;
+
+        } else {
+
+            // 待機中にとどまる
+            return progress.standby;
+        }
+
     }
 }
 
@@ -223,7 +232,7 @@ function checkResult(_image) {
     if (0 === positive.length && 0 === negative.length && 0 === watchers.length) {
 
         // 待機中に遷移する
-        return progress.standby;
+        return progress.none;
 
     } else {
 
@@ -237,6 +246,9 @@ function checkProgress(_image) {
     let next = _image.progress;
 
     switch (_image.progress) {
+
+        case progress.none:
+            break;
 
         case progress.standby:
             next = checkStandby(_image);
@@ -264,6 +276,10 @@ function checkProgress(_image) {
     }
 
     return next;
+}
+
+async function entryNone(_postId, _progress, _users) {
+    await setDiscussionPub(_postId, false);
 }
 
 async function entryStandby(_postId, _progress, _users) {
@@ -349,12 +365,15 @@ async function deleteUserCacheTable(_postId) {
 }
 
 async function exitResult(_postId, _progress, _users) {
-    await setDiscussionPub(_postId, false);
+    //await setDiscussionPub(_postId, false);
 }
 
 async function exit(_postId, _progress, _users) {
 
     switch (_progress) {
+
+        case progress.none:
+            break;
 
         case progress.standby:
             break;
@@ -382,6 +401,10 @@ async function exit(_postId, _progress, _users) {
 async function entry(_postId, _progress, _users) {
 
     switch (_progress) {
+
+        case progress.none:
+            await entryNone(_postId, _progress, _users);
+            break;
 
         case progress.standby:
             await entryStandby(_postId, _progress, _users);
@@ -665,11 +688,11 @@ function stateHandling(records) {
                     // 退出処理
                     await exit(postId, latestUserImage.progress, latestUserImage.users);
 
-                    // 進捗状況を更新する
-                    await setDiscussionProgress(postId, latestNextProgress);
-
                     // 進入処理
                     await entry(postId, latestNextProgress, latestUserImage.users);
+
+                    // 進捗状況を更新する
+                    await setDiscussionProgress(postId, latestNextProgress);
 
                     // 進捗のキャッシュを設定する
                     await writeProgressCache(postId, latestUserImage.progress, latestNextProgress);
