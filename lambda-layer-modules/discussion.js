@@ -945,3 +945,5 @@ exports.setDiscussionMeeting = setDiscussionMeeting;
 exports.setDiscussionResult = setDiscussionResult;
 exports.deleteSocket = deleteSocket;
 exports.deleteDiscussionMeeting = deleteDiscussionMeeting;
+exports.setDiscussionPub = setDiscussionPub;
+
