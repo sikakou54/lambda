@@ -531,7 +531,7 @@ async function setDiscussion(_country, _postId, _userId, _title, _detail, _posit
             country: _country,
             postId: _postId,
             createAt: getUtcMsec(),
-            pub: false,
+            pub: true,
             userId: _userId,
             title: _title,
             detail: _detail,
@@ -710,6 +710,24 @@ async function setDiscussionResult(_postId, _progress, _users) {
         }
     });
 }
+
+async function setDiscussionPub(_postId, _pub) {
+
+    await Update({
+        TableName: 'TABLE_DISCUSSION',
+        Key: {
+            postId: _postId
+        },
+        UpdateExpression: 'set #pub = :pub',
+        ExpressionAttributeNames: {
+            '#pub': 'pub',
+        },
+        ExpressionAttributeValues: {
+            ':pub': _pub,
+        }
+    });
+}
+
 
 async function joinDiscussionPositive(_postId, _socketId, _userId, _joinType) {
 
