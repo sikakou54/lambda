@@ -18,6 +18,10 @@ const userNotifyTable = [
      * standby
      ******************************************************************************************************************************************************************/
 
+    /* -> none */
+    { preProgress: progress.none, nextProgress: progress.none, preState: userState.none, nextState: userState.join, notify: userNorify.notifyStandbyRequest },
+    { preProgress: progress.standby, nextProgress: progress.none, preState: userState.none, nextState: userState.join, notify: userNorify.notifyStandbyRequest },
+
     /* -> standby */
     { preProgress: progress.standby, nextProgress: progress.standby, preState: userState.none, nextState: userState.join, notify: userNorify.notifyStandbyRequest },
 
@@ -106,15 +110,16 @@ function checkStandby(_image) {
 
     } else {
 
-        if (0 === positive.length && 0 === negative.length && 0 === watchers.length) {
+        if (0 < positive.length || 0 < negative.length || 0 < watchers.length) {
+
+            // 待機中にとどまる
+            return progress.standby;
+
+        } else {
 
             // 討論なし更新
             return progress.none;
 
-        } else {
-
-            // 待機中にとどまる
-            return progress.standby;
         }
 
     }
@@ -688,11 +693,11 @@ function stateHandling(records) {
                     // 退出処理
                     await exit(postId, latestUserImage.progress, latestUserImage.users);
 
-                    // 進入処理
-                    await entry(postId, latestNextProgress, latestUserImage.users);
-
                     // 進捗状況を更新する
                     await setDiscussionProgress(postId, latestNextProgress);
+
+                    // 進入処理
+                    await entry(postId, latestNextProgress, latestUserImage.users);
 
                     // 進捗のキャッシュを設定する
                     await writeProgressCache(postId, latestUserImage.progress, latestNextProgress);
