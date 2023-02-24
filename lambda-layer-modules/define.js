@@ -1,4 +1,5 @@
 exports.progress = {
+    none: 'none',
     standby: 'standby',
     ready: 'ready',
     discussion: 'discussion',
