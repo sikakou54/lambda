@@ -6,7 +6,8 @@ const { setDiscussionLimitTime,
     deleteDiscussionMeeting,
     getDiscussionLimitTime,
     getDiscussionResult,
-    getDiscussionMeetingConfig } = require('/opt/discussion');
+    getDiscussionMeetingConfig,
+    setDiscussionPub } = require('/opt/discussion');
 const { notify } = require('/opt/apiGateway');
 const { getUtcMsec } = require('/opt/utils');
 const { progress, userState, userJoinType, userNorify } = require('/opt/define');
@@ -279,7 +280,6 @@ async function entryReady(_postId, _progress, _users) {
 }
 
 async function entryDiscussion(_postId, _progress, _users) {
-
     await setDiscussionLimitTime(_postId, getUtcMsec(discussionTimeLimit));
 }
 
@@ -348,7 +348,9 @@ async function deleteUserCacheTable(_postId) {
 
 }
 
-async function exitResult(_postId, _progress, _users) { }
+async function exitResult(_postId, _progress, _users) {
+    await setDiscussionPub(_postId, false);
+}
 
 async function exit(_postId, _progress, _users) {
 
