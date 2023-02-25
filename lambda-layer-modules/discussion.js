@@ -106,8 +106,8 @@ async function getDiscussions(_country, _keys) {
 
     let param = {
         TableName: 'TABLE_DISCUSSION',
-        IndexName: 'country-createAt-index',
-        ScanIndexForward: false,
+        IndexName: 'country-postId-index',
+        ScanIndexForward: true,
         KeyConditionExpression: '#country = :country',
         ExpressionAttributeNames: {
             '#country': 'country'
@@ -115,7 +115,7 @@ async function getDiscussions(_country, _keys) {
         ExpressionAttributeValues: {
             ':country': _country
         },
-        Limit: 50
+        //Limit: 50
     };
 
     if (null !== _keys) {
@@ -525,17 +525,64 @@ async function setWatcherVote(_postId, _socketId, _userId, _judge) {
 
 async function setDiscussion(_country, _postId, _userId, _title, _detail, _positiveText, _negativeText) {
 
+    return await Update({
+        TableName: 'TABLE_DISCUSSION',
+        Key: {
+            postId: _postId
+        },
+        UpdateExpression: 'set #country = :country, #createAt = :createAt, #pub = :pub, #userId = :userId, #title = :title, #detail = :detail, #progress = :progress, #limitTime = :limitTime,' +
+            '#positive.#text = :positive_text, #positive.#socketId = :socketId, #positive.#state = :state, #positive.#version = :version,' +
+            '#negative.#text = :negative_text, #negative.#socketId = :socketId, #negative.#state = :state, #negative.#version = :version,' +
+            '#watchers = :watchers',
+        ExpressionAttributeNames: {
+            '#country': 'country',
+            '#createAt': 'createAt',
+            '#pub': 'pub',
+            '#userId': 'userId',
+            '#title': 'title',
+            '#detail': 'detail',
+            '#progress': 'progress',
+            '#limitTime': 'limitTime',
+            '#positive': 'positive',
+            '#negative': 'negative',
+            '#text': 'text',
+            '#socketId': 'socketId',
+            '#state': 'state',
+            '#version': 'version',
+            '#watchers': 'watchers'
+        },
+        ExpressionAttributeValues: {
+            ':country': _country,
+            ':createAt': getUtcMsec(),
+            ':pub': true,
+            ':userId': _userId,
+            ':title': _title,
+            ':detail': _detail,
+            ':progress': 'standby',
+            ':limitTime': 0,
+            ':positive_text': _positiveText,
+            ':negative_text': _negativeText,
+            ':socketId': 'none',
+            ':state': 'none',
+            ':version': 0,
+            ':watchers': []
+        }
+    });
+}
+
+async function setUpDiscussion(_country, _postId, _userId, _title, _detail, _positiveText, _negativeText) {
+
     return await Put({
         TableName: 'TABLE_DISCUSSION',
         Item: {
             country: _country,
             postId: _postId,
             createAt: getUtcMsec(),
-            pub: true,
+            pub: false,
             userId: _userId,
             title: _title,
             detail: _detail,
-            progress: 'standby',
+            progress: 'none',
             limitTime: 0,
             positive: {
                 text: _positiveText,
@@ -946,4 +993,5 @@ exports.setDiscussionResult = setDiscussionResult;
 exports.deleteSocket = deleteSocket;
 exports.deleteDiscussionMeeting = deleteDiscussionMeeting;
 exports.setDiscussionPub = setDiscussionPub;
+exports.setUpDiscussion = setUpDiscussion;
 
