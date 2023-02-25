@@ -19,7 +19,7 @@ const userNotifyTable = [
      ******************************************************************************************************************************************************************/
 
     /* -> none */
-    { preProgress: progress.none, nextProgress: progress.none, preState: userState.none, nextState: userState.join, notify: userNorify.notifyStandbyRequest },
+    { preProgress: progress.none, nextProgress: progress.none, preState: userState.none, nextState: userState.join, notify: userNorify.notifyJoinImpossibleRequest },
     { preProgress: progress.standby, nextProgress: progress.none, preState: userState.none, nextState: userState.join, notify: userNorify.notifyStandbyRequest },
 
     /* -> standby */
