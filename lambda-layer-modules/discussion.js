@@ -115,13 +115,12 @@ async function getDiscussions(_country, _keys) {
         ExpressionAttributeValues: {
             ':country': _country
         },
-        //Limit: 50
+        Limit: 50
     };
 
     if (null !== _keys) {
         param.ExclusiveStartKey = {
             country: _country,
-            createAt: _keys.createAt,
             postId: _keys.postId
         };
     }
