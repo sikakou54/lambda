@@ -783,7 +783,7 @@ async function dynamoDbTriggerHandler(records) {
 
         if ('MODIFY' === records[i].eventName) {
 
-            const postId = records[i].dynamodb.Keys.postId.S;
+            const postId = Number(records[i].dynamodb.Keys.postId.N);
             const oldUserImage = getUsersImage(records[i].dynamodb.OldImage);
             const latestUserImage = getUsersImage(records[i].dynamodb.NewImage);
             const oldNextProgress = checkProgress(oldUserImage);
