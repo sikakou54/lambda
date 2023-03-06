@@ -113,19 +113,19 @@ function checkStandby(_image) {
         // 待機中にとどまる
         return progress.standby;
 
-/*
-        if (0 < positive.length || 0 < negative.length || 0 < watchers.length) {
-
-            // 待機中にとどまる
-            return progress.standby;
-
-        } else {
-
-            // 討論なし更新
-            return progress.none;
-
-        }
-*/
+        /*
+                if (0 < positive.length || 0 < negative.length || 0 < watchers.length) {
+        
+                    // 待機中にとどまる
+                    return progress.standby;
+        
+                } else {
+        
+                    // 討論なし更新
+                    return progress.none;
+        
+                }
+        */
     }
 }
 
@@ -460,7 +460,7 @@ async function getUserNotifyTable(_preProgress, _nextProgress, _preState, _nextS
     return notify;
 }
 
-async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _nextState, _user, _oldUsers, _latestUsers) {
+async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _nextState, _user, _attendees) {
 
     let msg = null;
     let notify = null;
@@ -475,7 +475,9 @@ async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _n
         case userNorify.notifyStandbyRequest:
             msg = {
                 notify,
-                data: null
+                data: {
+                    attendees: _attendees
+                }
             };
             break;
 
@@ -486,7 +488,8 @@ async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _n
                 msg = {
                     notify,
                     data: {
-                        config
+                        config,
+                        attendees: _attendees
                     }
                 };
             }
@@ -498,7 +501,8 @@ async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _n
             msg = {
                 notify,
                 data: {
-                    limitTime
+                    limitTime,
+                    attendees: _attendees
                 }
             };
             break;
@@ -507,7 +511,9 @@ async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _n
         case userNorify.notifyJoinImpossibleRequest:
             msg = {
                 notify,
-                data: null
+                data: {
+                    attendees: _attendees
+                }
             };
             break;
 
@@ -517,7 +523,8 @@ async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _n
             msg = {
                 notify,
                 data: {
-                    limitTime
+                    limitTime,
+                    attendees: _attendees
                 }
             };
             break;
@@ -528,7 +535,8 @@ async function getUserNotify(_postId, _preProgress, _nextProgress, _preState, _n
             msg = {
                 notify,
                 data: {
-                    result
+                    result,
+                    attendees: _attendees
                 }
             };
             break;
@@ -546,24 +554,22 @@ function getUsersImage(_image) {
     const watchers = _image.watchers.L;
 
     // 肯定をユーザー配列に追加する
-    if (userState.none !== _image.positive.M.state.S) {
-        users.push({
-            type: userJoinType.positive,
-            userId: _image.positive.M.userId.S,
-            state: _image.positive.M.state.S,
-            socketId: _image.positive.M.socketId.S
-        });
-    }
+    users.push({
+        type: userJoinType.positive,
+        userId: _image.positive.M.userId.S,
+        state: _image.positive.M.state.S,
+        socketId: _image.positive.M.socketId.S,
+        text: _image.positive.M.text.S,
+    });
 
     // 否定をユーザー配列に追加する
-    if (userState.none !== _image.negative.M.state.S) {
-        users.push({
-            type: userJoinType.negative,
-            userId: _image.negative.M.userId.S,
-            state: _image.negative.M.state.S,
-            socketId: _image.negative.M.socketId.S
-        });
-    }
+    users.push({
+        type: userJoinType.negative,
+        userId: _image.negative.M.userId.S,
+        state: _image.negative.M.state.S,
+        socketId: _image.negative.M.socketId.S,
+        text: _image.negative.M.text.S,
+    });
 
     // 視聴者をユーザー配列に追加する
     for (let i = 0; i < watchers.length; i++) {
@@ -674,6 +680,34 @@ async function readUserCache(_postId, _socketId) {
     };
 }
 
+function getAttendeesJson(_users) {
+
+    const positive = _users.filter((v) => v.type === userJoinType.positive);
+    const negative = _users.filter((v) => v.type === userJoinType.negative);
+    const watcher = _users.filter((v) => v.type === userJoinType.watcher);
+    const watchers = [];
+
+    for (let index = 0; index < watcher.length; index++) {
+        watchers.push({
+            userId: watcher[index].userId
+        });
+    }
+
+    const json = {
+        positive: {
+            userId: positive[0].userId,
+            text: positive[0].text,
+        },
+        negative: {
+            userId: negative[0].userId || 'none',
+            text: negative[0].text,
+        },
+        watchers
+    };
+
+    return json;
+}
+
 function stateHandling(records) {
 
     return new Promise(async (resolve) => {
@@ -720,10 +754,13 @@ function stateHandling(records) {
                     let message = null;
                     let preState = userState.none;
 
+                    // attendeesのJsonデータを取得する
+                    const attendees = getAttendeesJson(latestUserImage.users);
+
                     // ユーザーのOldImageの状態を取得する
                     const user = oldUserImage.users.find((v) => v.type === latestUserImage.users[i].type && v.socketId === latestUserImage.users[i].socketId);
 
-                    // データがない場合は状態なしとする
+                    // データがある場合は状態を設定する
                     if (undefined !== user) {
                         preState = user.state;
                     }
@@ -745,7 +782,7 @@ function stateHandling(records) {
                             //console.log('user', 'latest', latestUserImage.users[i].type, latestUserImage.progress + '->' + latestNextProgress, preState + '->' + latestUserImage.users[i].state);
 
                             // 通知を取得する
-                            message = await getUserNotify(postId, latestUserImage.progress, latestNextProgress, preState, latestUserImage.users[i].state, latestUserImage.users[i], oldUserImage.users, latestUserImage.users);
+                            message = await getUserNotify(postId, latestUserImage.progress, latestNextProgress, preState, latestUserImage.users[i].state, latestUserImage.users[i], attendees);
 
                             // 通知があれば追加する
                             if (null !== message) {
@@ -754,7 +791,27 @@ function stateHandling(records) {
 
                             // ユーザー状態遷移のキャッシュを設定する
                             await writeUserCache(postId, latestUserImage.users[i].socketId, latestUserImage.progress, latestNextProgress, preState, latestUserImage.users[i].state);
+
+                        } else {
+
+                            // なければ討論状態変化通知を通知する
+                            await notify(latestUserImage.users[i].socketId, {
+                                notify: 'notifyDiscussionStatus',
+                                data: {
+                                    attendees
+                                }
+                            });
                         }
+
+                    } else {
+
+                        // なければ討論状態変化通知を通知する
+                        await notify(latestUserImage.users[i].socketId, {
+                            notify: 'notifyDiscussionStatus',
+                            data: {
+                                attendees
+                            }
+                        });
                     }
 
                     // return 
