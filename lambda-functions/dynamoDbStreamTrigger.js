@@ -98,12 +98,11 @@ function checkStandby(_image) {
     let positive = _image.users.filter((v) => v.type === userJoinType.positive);
     let negative = _image.users.filter((v) => v.type === userJoinType.negative);
     let watchers = _image.users.filter((v) => v.type === userJoinType.watcher);
-    let watchersStandby = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.standby);
 
     // 以下条件を満たす場合、準備中に遷移する
     // 肯定と否定が「参加」or「待機中」の場合
     // 「参加」or「待機中」の視聴者数が３人以上の場合
-    if ('none' !== positive[0].userId && 'none' !== negative[0].userId && watchersMax <= watchers.length && watchers.length <= watchersStandby.length) {
+    if ('none' !== positive[0].userId && 'none' !== negative[0].userId && watchersMax <= watchers.length) {
 
         // 準備中に遷移する
         return progress.ready;
