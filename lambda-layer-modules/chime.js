@@ -22,14 +22,15 @@ async function createMeeting(_postId) {
 
     let retry = 0;
     let meeting = null;
+    const token = AWS.util.uuid.v4();
 
     while (true) {
 
         try {
 
             meeting = await chime.createMeeting({
-                ClientRequestToken: _postId,
-                ExternalMeetingId: _postId,
+                ClientRequestToken: token,
+                ExternalMeetingId: token,
                 MediaRegion: 'us-east-1'
             }).promise();
             break;
