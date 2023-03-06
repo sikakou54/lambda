@@ -110,6 +110,10 @@ function checkStandby(_image) {
 
     } else {
 
+        // 待機中にとどまる
+        return progress.standby;
+
+/*
         if (0 < positive.length || 0 < negative.length || 0 < watchers.length) {
 
             // 待機中にとどまる
@@ -121,7 +125,7 @@ function checkStandby(_image) {
             return progress.none;
 
         }
-
+*/
     }
 }
 
@@ -294,6 +298,10 @@ async function entryStandby(_postId, _progress, _users) {
 
     // ユーザー状態遷移キャッシュを初期化
     await deleteUserCacheTable(_postId);
+
+    await setDiscussionLimitTime(_postId, 0);
+
+    await deleteDiscussionMeeting(_postId);
 }
 
 async function entryReady(_postId, _progress, _users) {
