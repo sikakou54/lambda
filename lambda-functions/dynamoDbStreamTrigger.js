@@ -787,37 +787,14 @@ function stateHandling(records) {
                             // 通知があれば追加する
                             if (null !== message) {
                                 await notify(latestUserImage.users[i].socketId, message);
-                            } else {
-
-                                // 参加者数に変化があれば討論状態変化通知を通知する
-                                if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
-                                    await notify(latestUserImage.users[i].socketId, {
-                                        notify: 'notifyDiscussionStatus',
-                                        data: {
-                                            attendees
-                                        }
-                                    });
-                                }
                             }
 
                             // ユーザー状態遷移のキャッシュを設定する
                             await writeUserCache(postId, latestUserImage.users[i].socketId, latestUserImage.progress, latestNextProgress, preState, latestUserImage.users[i].state);
-
-                        } else {
-
-                            // 参加者数に変化があれば討論状態変化通知を通知する
-                            if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
-                                await notify(latestUserImage.users[i].socketId, {
-                                    notify: 'notifyDiscussionStatus',
-                                    data: {
-                                        attendees
-                                    }
-                                });
-                            }
                         }
+                    }
 
-                    } else {
-
+                    if (null === message) {
                         // 参加者数に変化があれば討論状態変化通知を通知する
                         if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
                             await notify(latestUserImage.users[i].socketId, {
@@ -828,7 +805,6 @@ function stateHandling(records) {
                             });
                         }
                     }
-
 
                     // return 
                     resolve({
