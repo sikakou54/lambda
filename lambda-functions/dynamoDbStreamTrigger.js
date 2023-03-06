@@ -787,6 +787,17 @@ function stateHandling(records) {
                             // 通知があれば追加する
                             if (null !== message) {
                                 await notify(latestUserImage.users[i].socketId, message);
+                            } else {
+
+                                // 参加者数に変化があれば討論状態変化通知を通知する
+                                if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
+                                    await notify(latestUserImage.users[i].socketId, {
+                                        notify: 'notifyDiscussionStatus',
+                                        data: {
+                                            attendees
+                                        }
+                                    });
+                                }
                             }
 
                             // ユーザー状態遷移のキャッシュを設定する
@@ -794,7 +805,21 @@ function stateHandling(records) {
 
                         } else {
 
-                            // なければ討論状態変化通知を通知する
+                            // 参加者数に変化があれば討論状態変化通知を通知する
+                            if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
+                                await notify(latestUserImage.users[i].socketId, {
+                                    notify: 'notifyDiscussionStatus',
+                                    data: {
+                                        attendees
+                                    }
+                                });
+                            }
+                        }
+
+                    } else {
+
+                        // 参加者数に変化があれば討論状態変化通知を通知する
+                        if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
                             await notify(latestUserImage.users[i].socketId, {
                                 notify: 'notifyDiscussionStatus',
                                 data: {
@@ -802,17 +827,8 @@ function stateHandling(records) {
                                 }
                             });
                         }
-
-                    } else {
-
-                        // なければ討論状態変化通知を通知する
-                        await notify(latestUserImage.users[i].socketId, {
-                            notify: 'notifyDiscussionStatus',
-                            data: {
-                                attendees
-                            }
-                        });
                     }
+
 
                     // return 
                     resolve({
