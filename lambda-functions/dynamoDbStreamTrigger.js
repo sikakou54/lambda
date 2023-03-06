@@ -95,15 +95,15 @@ const voteTimeLimit = 30000;
 
 function checkStandby(_image) {
 
-    let positive = _image.users.filter((v) => v.type === userJoinType.positive && v.state === userState.standby);
-    let negative = _image.users.filter((v) => v.type === userJoinType.negative && v.state === userState.standby);
+    let positive = _image.users.filter((v) => v.type === userJoinType.positive);
+    let negative = _image.users.filter((v) => v.type === userJoinType.negative);
     let watchers = _image.users.filter((v) => v.type === userJoinType.watcher);
     let watchersStandby = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.standby);
 
     // 以下条件を満たす場合、準備中に遷移する
     // 肯定と否定が「参加」or「待機中」の場合
     // 「参加」or「待機中」の視聴者数が３人以上の場合
-    if (0 < positive.length && 0 < negative.length && watchersMax <= watchers.length && watchers.length <= watchersStandby.length) {
+    if ('none' !== positive[0].userId && 'none' !== negative[0].userId && watchersMax <= watchers.length && watchers.length <= watchersStandby.length) {
 
         // 準備中に遷移する
         return progress.ready;
@@ -112,120 +112,99 @@ function checkStandby(_image) {
 
         // 待機中にとどまる
         return progress.standby;
-
-        /*
-                if (0 < positive.length || 0 < negative.length || 0 < watchers.length) {
-        
-                    // 待機中にとどまる
-                    return progress.standby;
-        
-                } else {
-        
-                    // 討論なし更新
-                    return progress.none;
-        
-                }
-        */
     }
 }
 
 function checkReady(_image) {
 
-    let positive = _image.users.filter((v) => v.type === userJoinType.positive && v.state === userState.online);
-    let negative = _image.users.filter((v) => v.type === userJoinType.negative && v.state === userState.online);
+    let positive = _image.users.filter((v) => v.type === userJoinType.positive);
+    let negative = _image.users.filter((v) => v.type === userJoinType.negative);
     let watchers = _image.users.filter((v) => v.type === userJoinType.watcher);
-    let watchersOnline = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.online);
 
-    // 以下条件を満たす場合、「準備中」にとどまる。
-    // 肯定と否定が「オンライン」の場合
-    // 「オンライン」の視聴者数が３人以上の場合
-    if (0 < positive.length && 0 < negative.length && watchers.length <= watchersOnline.length) {
+    // 開始条件に満たない場合は準備中に戻る
+    if ('none' !== positive[0].userId && 'none' !== negative[0].userId && watchersMax <= watchers.length) {
 
-        // 討論中に遷移する
-        return progress.discussion;
+        positive = _image.users.filter((v) => v.type === userJoinType.positive && v.state === userState.online);
+        negative = _image.users.filter((v) => v.type === userJoinType.negative && v.state === userState.online);
+        let watchersOnline = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.online);
 
-    } else {
+        // 以下条件を満たす場合、「準備中」にとどまる。
+        // 肯定と否定が「オンライン」の場合
+        // 「オンライン」の視聴者数が３人以上の場合
+        if (0 < positive.length && 0 < negative.length && watchers.length <= watchersOnline.length) {
 
-        positive = _image.users.filter((v) => v.type === userJoinType.positive);
-        negative = _image.users.filter((v) => v.type === userJoinType.negative);
-
-        // 開始条件に満たない場合は準備中に戻る
-        if (0 === positive.length || 0 === negative.length || watchers < watchersMax) {
-
-            // 待機中に遷移する
-            return progress.standby;
+            // 討論中に遷移する
+            return progress.discussion;
 
         } else {
-
             // 準備中にとどまる
             return progress.ready;
         }
 
+    } else {
+
+        // 待機中に遷移する
+        return progress.standby;
     }
 }
 
 function checkDiscussion(_image) {
 
-    let positive = _image.users.filter((v) => v.type === userJoinType.positive && v.state === userState.finish);
-    let negative = _image.users.filter((v) => v.type === userJoinType.negative && v.state === userState.finish);
+    let positive = _image.users.filter((v) => v.type === userJoinType.positive);
+    let negative = _image.users.filter((v) => v.type === userJoinType.negative);
     let watchers = _image.users.filter((v) => v.type === userJoinType.watcher);
-    let finishWatchers = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.finish);
 
-    if (0 < positive.length && 0 < negative.length && finishWatchers.length === watchers.length) {
+    // 開始条件に満たない場合は準備中に戻る
+    if ('none' !== positive[0].userId && 'none' !== negative[0].userId && watchers.length >= watchersMax) {
 
-        // 投票中に遷移する
-        return progress.vote;
+        positive = _image.users.filter((v) => v.type === userJoinType.positive && v.state === userState.finish);
+        negative = _image.users.filter((v) => v.type === userJoinType.negative && v.state === userState.finish);
+        let finishWatchers = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.finish);
+
+        if (0 < positive.length && 0 < negative.length && finishWatchers.length === watchers.length) {
+
+            // 投票中に遷移する
+            return progress.vote;
+
+        } else {
+            // 討論中にとどまる
+            return progress.discussion;
+        }
 
     } else {
 
-        positive = _image.users.filter((v) => v.type === userJoinType.positive && (v.state === userState.online || v.state === userState.finish));
-        negative = _image.users.filter((v) => v.type === userJoinType.negative && (v.state === userState.online || v.state === userState.finish));
-        finishWatchers = _image.users.filter((v) => v.type === userJoinType.watcher && (v.state === userState.online || v.state === userState.finish));
-
-        // 以下条件を満たす場合、「討論中」にとどまる。
-        // 肯定と否定が「オンライン」の場合
-        // 「オンライン」の視聴者数が３人以上の場合
-        if (0 < positive.length && 0 < negative.length && watchersMax <= finishWatchers.length) {
-
-            // 討論中にとどまる
-            return progress.discussion;
-
-        } else {
-
-            // 「待機中」に遷移する
-            return progress.standby;
-        }
+        // 待機中に遷移する
+        return progress.standby;
     }
 }
 
 function checkVote(_image) {
 
+    let positive = _image.users.filter((v) => v.type === userJoinType.positive);
+    let negative = _image.users.filter((v) => v.type === userJoinType.negative);
     let watchers = _image.users.filter((v) => v.type === userJoinType.watcher);
-    let votingDoneWatchers = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.votingDone);
 
-    // 以下条件を満たす場合、「結果発表中」に遷移する
-    // 全ての視聴者が「投票完了」の場合
-    if (watchers.length === votingDoneWatchers.length) {
+    // 開始条件に満たない場合は準備中に戻る
+    if ('none' !== positive[0].userId || 'none' !== negative[0].userId || watchers > 0) {
 
-        // 結果発表中に遷移する
-        return progress.result;
+        let votingDoneWatchers = _image.users.filter((v) => v.type === userJoinType.watcher && v.state === userState.votingDone);
 
-    } else {
+        // 以下条件を満たす場合、「結果発表中」に遷移する
+        // 全ての視聴者が「投票完了」の場合
+        if (watchers.length === votingDoneWatchers.length) {
 
-        let positive = _image.users.filter((v) => v.type === userJoinType.positive && v.state === userState.none);
-        let negative = _image.users.filter((v) => v.type === userJoinType.negative && v.state === userState.none);
-
-        if (0 < positive.length && 0 < negative.length && 0 === watchers.length) {
-
-            // 待機中に遷移する
-            return progress.standby;
+            // 結果発表中に遷移する
+            return progress.result;
 
         } else {
-
             // 投票中にとどまる
             return progress.vote;
         }
 
+    } else {
+
+        // 待機中に遷移する
+        return progress.standby;
     }
 }
 
@@ -238,7 +217,7 @@ function checkResult(_image) {
     // 以下条件を満たす場合、「待機中」に遷移する
     // 肯定と否定が「状態なし」の場合
     // 視聴者数が0(視聴者が全員抜けた)場合
-    if (0 === positive.length && 0 === negative.length && 0 === watchers.length) {
+    if ('none' === positive[0].userId && 'none' === negative[0].userId && 0 === watchers.length) {
 
         // 待機中に遷移する
         return progress.none;
@@ -708,6 +687,26 @@ function getAttendeesJson(_users) {
     return json;
 }
 
+function checkAttendees(_old, _latest) {
+
+    const old_positive = _old.filter((v) => v.type === userJoinType.positive);
+    const old_negative = _old.filter((v) => v.type === userJoinType.negative);
+    const old_watchers = _old.filter((v) => v.type === userJoinType.watcher);
+    const latest_positive = _latest.filter((v) => v.type === userJoinType.positive);
+    const latest_negative = _latest.filter((v) => v.type === userJoinType.negative);
+    const latest_watchers = _latest.filter((v) => v.type === userJoinType.watcher);
+
+    if (old_positive[0].userId !== latest_positive[0].userId ||
+        old_negative[0].userId !== latest_negative[0].userId) {
+        return true;
+    }
+    if (old_watchers.length !== latest_watchers.length) {
+        return true;
+    }
+
+    return false;
+}
+
 function stateHandling(records) {
 
     return new Promise(async (resolve) => {
@@ -795,8 +794,9 @@ function stateHandling(records) {
                     }
 
                     if (null === message) {
+
                         // 参加者数に変化があれば討論状態変化通知を通知する
-                        if (JSON.stringify(oldUserImage.users) !== JSON.stringify(latestUserImage.users)) {
+                        if (checkAttendees(oldUserImage.users, latestUserImage.users)) {
                             await notify(latestUserImage.users[i].socketId, {
                                 notify: 'notifyDiscussionStatus',
                                 data: {
